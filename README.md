@@ -1,30 +1,24 @@
--Fragen
+Fragen
 ===================
 
 ##Grundlage
 
 1.1 Was ist der Unterschied zwischen User-Level Threads und Kernel Level Threads?
 
-
 1.2 Zeichne die Zusammenhänge zwischen den drei möglichen Threds Zustände auf.
-
 ![Thread Zustände](https://github.com/suizo12/-HSR.modules.PnProg/blob/master/images/threadzustaende.png)
 
-	
 1.3 Was sind Deamon Threads?
 
-
 1.4 Wie kann die JVM Terminiert werden?
-
 - Wenn keine Threads mehr vorhanden sind.
 - System.exit()
 - Runtime.exit()
 
 
 1.5 Wie wird ein Thread in Java erstellt?
-
 ```java
-//thread implementation
+//thread implemetation
 class SimpleThread extends Thread {
 	@Override
 	public void run() {
@@ -36,8 +30,6 @@ class SimpleThread extends Thread {
 Thread myThread= new SimpleThread();
 //start thread
 myThread.start();
-
-//	-	-	-	-	-	-	-	-	-	-	-	-	-	-	-	-	-	-	-	-	--//
 //Runnable Implementation
 class SimpleLogic implements Runnable{
 	@Override
@@ -51,7 +43,6 @@ Thread myThread= new Thread(new SimpleLogic());
 //start thread
 myThread.start();
 
-//	-	-	-	-	-	-	-	-	-	-	-	-	-	-	-	-	-	-	-	-	--//
 //Ad-Hoc implementation entspricht Thread implementation
 Thread myThread= new Thread(() -> {
 	// threadbehavior
@@ -60,9 +51,7 @@ Thread myThread= new Thread(() -> {
 myThread.start();
 ```
 
-
 1.6 Welche Ausgabe ergibt den folgenden Codeabschnitt?
-
 ```java
 class SimpleThread extends Thread {
 	private String label;
@@ -89,22 +78,21 @@ public class MultiThreadTest{
 ```
 Es wird "A 1"…"A 10" und "B 1" … "B 10" ausgegeben die Reihenfolge ist nicht deterministisch. "main finished" kann irgendwann kommen.
 
-
 1.7 Was passiert wenn anstatt start() run() aufgerufen wird?
-Deterministischer Aufruf
-main finished
-A1 
-A2
-A3
-…
-A10
-B1
-B2
-…
-B10
+Deterministischer Aufruf:
+>main finished
+>A1 
+>A2
+>A3
+>…
+>A10
+>B1
+>B2
+>…
+>B10
 
 1.8 Stimmt die folgende Aussage: "Treads in einer JVM laufen immer Deterministisch"
-Meistens,jedoch nicht immer, Threads laufen ohne Vorkehrungen beliebig verzahnt oder parallel. Viele JVMs realisieren einzelne System Outputs ohne Verzahnung/Thread-Fehler -aber es ist nicht spezifiziert!
+Meistens, jedoch nicht immer, Threads laufen ohne Vorkehrungen beliebig verzahnt oder parallel. Viele JVMs realisieren einzelne System Outputs ohne Verzahnung/Thread-Fehler -aber es ist nicht spezifiziert!
 
 1.9 Was versteht man unter Explizit bzw. Implizit final. Gebe ein Beispiel für jedes:
 ```java
@@ -330,7 +318,10 @@ class BankAccount {
 - notifyAll()weckt alle im Monitor wartende Threads auf
 - Kein Effekt, falls kein Thread wartet
 
-2.13 Warum muss ein eine Schlaufe um die wait() Methode sein? while ( Bedinung ) { wait(); }
+2.13 Warum muss ein eine Schlaufe um die wait() Methode sein? 
+```java
+while ( Bedinung ) { wait(); }
+```
 Weil die Bedingung nicht zwingen erfüllt sein muss.
 
 2.14 Was ist Speziell an den Methoden wait(), notify() und notifyAll()?
@@ -1080,7 +1071,127 @@ Wenn der Rote Thread einen Callback macht und dieser mit dem Laufendem Thread sy
 neuer Thread | new Thread(() -> { // threadbehavior }); | new Thread(() => { //threadbehavior });
 Zugriff auf variablen in Runnable(java) / lambdas(c#) | nur read (effectively final) | write / read -> Prädesteniert für Data Races
 Synchronize Block | synchronize( Object ){} | lock( syncObject) {}
+Exception | nur der Thread bricht ab | Führen bei default zum abbruch des gesamten Programms
 Monitor | |
 while um wait | nötig | nötig
-monitor.wait() | | Monitor.Wait(syncObject);
+monitor.wait() | wait(); | Monitor.Wait(syncObject);
 notify | notifyAll(); | Monitor.PulseAll(syncObject);
+Warteschlange | keine, sporious wake up | FIFO
+Überholproblem? | Ja | Ja
+synchronisation mit | mit this: synchronize( this ){} | private Object syncObject = new Object(); <br />lock( syncObject) {}
+ | | 
+Collection theadsave? | siehe 4.5 | Nein, ausser
+ 
+6.2 Gebe ein Beispiel zu .Net Monitor
+![.Net Monitor](https://github.com/suizo12/-HSR.modules.PnProg/blob/master/images/.netmonitor.png)
+
+6.3 In Java wurde immer this (best practice) gelockt, in .Net (best praktce) wird ein Hilfsobject verwendet (syncObject) um die Synchronisation zu garantieren. Was sind dabei die Vorteile?
+Vorteile: Mehrere verschiedene Locks innerhalb einer Klasse
+Es wird verhindert, dass jemand BankAccount von aussen locken kann.
+Nachteile: Es kann nicht von aussen gelockt werden.
+
+6.4 Was ist hier falsch?
+```c#
+for(inti = 0; i < 100; i++) {
+	Task.Factory.StartNew(() => {
+		// usei asinput
+		Console.WriteLine("Working with" + i);
+	});
+}
+```
+Falsch ist, das auf i gelesen und geschrieben wird
+
+6.5 Was ist die Ausgabe des folgenden Code?
+```c#
+staticvoidMain() {
+	Task.Factory.StartNew(() => {
+		// somecalculation
+		Console.WriteLine("Task finished");
+	});
+}
+```
+Kommt darauf an. Task wird evtl. nicht oder unvollständig ausgeführt, da der Task ein Deamon Thread ist.
+
+6.6 Wie lässt sich folgender Code korrigieren?
+![.Net Race](https://github.com/suizo12/-HSR.modules.PnProg/blob/master/images/.netrace.png)
+```c#
+long totalWords= 0;
+Parallel.ForEach<FileInfo>(files, (f) => {
+	int subTotal= CountWords(f);
+	lock(someLockObj) {
+		totalWords+= subTotal;
+	}
+);
+```
+
+6.7 Task Parallelisierung: 
+####Start und Wait
+```c#
+Task task = Task.Factory.StartNew(() => {
+	// task implementation
+});
+// perform other activity
+task.Wait(); //Blockiert, bis Task beendet ist
+```
+
+####Multi Task Start und Wait
+```c#
+Task[] taskArray= newTask[] {
+	Task.Factory.StartNew(() => Calculation1()),
+	Task.Factory.StartNew(() => Calculation2()),
+	Task.Factory.StartNew(() => Calculation3())
+};
+Task.WaitAll(taskArray);//Ende von allen Tasks abwarten
+//---------------------------//
+Task<double>[] taskArray= newTask<double>[] {
+	Task.Factory.StartNew(() => FindInLeft()),
+	Task.Factory.StartNew(() => FindInRight())
+};
+
+//Index des beendeten Tasks
+int index = Task.WaitAny(taskArray); //Ersten beendeten Task abwarten
+Console.Write(taskArray[index].Result);
+```
+Task können Sub-Tasks starten und/oder abwarten
+```c#
+Task.Factory.StartNew(() => {
+	// outer task
+	Task<bool> left = Task.Factory.StartNew(() => Search(leftPart));
+	Task<bool> right = Task.Factory.StartNew(() => Search(rightPart));
+	bool found = left.Result|| right.Result;
+	…
+});
+```
+
+####Rückgabetyp
+```c#
+//int ist Rückgabetyp
+Task<int> task = Task.Factory.StartNew(() => {
+	int total = … // somecalculation
+	return total;
+});
+…
+Console.Write(task.Result); // Blockiert bis Task Ende und liefert dann Resultat
+```
+
+####Task Parameter Übergabe
+Entweder direkter Zugriff (anfällig auf Race Conditions) oder
+```c#
+//Object obj = new Object();
+Task task = Task.Factory.StartNew((obj)=> {
+	int myParamValue = (int)obj; //cast nötig
+	// task implementation using myParamValue
+}, 10); // 10 ist das Argument, welches übergeben wird.
+```
+
+6.8 Wie lässt sich hierfür ein CompletionCalback/Handling realisieren? Was ist dabei zu beachten?
+```c#
+Task task = Task.Factory.StartNew(() => DownloadFile(url));
+```
+```c#
+task.Result; // (is a callback. Result blockiert..!!!)
+//Oder
+task.ContinueWith(otherTask).ContinueWith(otherTask);// führe etwas nach 
+```
+Wenn url von aussen geändert wird kann eine RaceCondition entstehen.
+
