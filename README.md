@@ -2,19 +2,27 @@
 ===================
 
 ##Grundlage
+
 1.1 Was ist der Unterschied zwischen User-Level Threads und Kernel Level Threads?
 
+
 1.2 Zeichne die Zusammenhänge zwischen den drei möglichen Threds Zustände auf.
+
 ![Thread Zustände](https://github.com/suizo12/-HSR.modules.PnProg/blob/master/images/threadzustaende.png)
+
 	
 1.3 Was sind Deamon Threads?
 
+
 1.4 Wie kann die JVM Terminiert werden?
+
 - Wenn keine Threads mehr vorhanden sind.
 - System.exit()
 - Runtime.exit()
 
+
 1.5 Wie wird ein Thread in Java erstellt?
+
 ```java
 //thread implementation
 class SimpleThread extends Thread {
@@ -52,7 +60,9 @@ Thread myThread= new Thread(() -> {
 myThread.start();
 ```
 
+
 1.6 Welche Ausgabe ergibt den folgenden Codeabschnitt?
+
 ```java
 class SimpleThread extends Thread {
 	private String label;
@@ -77,12 +87,12 @@ public class MultiThreadTest{
 	}
 }
 ```
-
 Es wird "A 1"…"A 10" und "B 1" … "B 10" ausgegeben die Reihenfolge ist nicht deterministisch. "main finished" kann irgendwann kommen.
+
 
 1.7 Was passiert wenn anstatt start() run() aufgerufen wird?
 Deterministischer Aufruf
-"main finished
+main finished
 A1 
 A2
 A3
@@ -91,7 +101,7 @@ A10
 B1
 B2
 …
-B10"
+B10
 
 1.8 Stimmt die folgende Aussage: "Treads in einer JVM laufen immer Deterministisch"
 Meistens,jedoch nicht immer, Threads laufen ohne Vorkehrungen beliebig verzahnt oder parallel. Viele JVMs realisieren einzelne System Outputs ohne Verzahnung/Thread-Fehler -aber es ist nicht spezifiziert!
@@ -455,7 +465,7 @@ Schritt 2 Synchronized ersetzten
 
 3.5 Wie wird notify(), wait(), while um wait() und synchonized mit semaphoren ersetzt?
 Monitor | Semaphor
----------------| 	-	-	-	-	-	-
+--------------- | ---------------
 notifyAll() | release(), gibt Resource frei, benarchritig Wartende.
 wait() | acquire(), Bezieht freie Ressource.
 while um wait() | acquire(), Wartet wenn keine Ressource verfügbar ist.
@@ -787,3 +797,290 @@ void acquireMultiLocks(Lock[] lockSet) {
 	}
 }
 ```
+
+## Thread Pools & Asynchrone Programmierung
+5.1 Erkläre das Thread Pool Prinzip.
+Thread Pool ist ein Topf mit einer beschränkter Anzhal Threads.
+Task implementieren potentiele Arbeitspakete, welche als Queue warten bis ein Thread im Pool diese Abarbeitet.
+
+5.2 Was sind die Vorteile von Thread Pool?
+- Beschränkte Anzahl von Threads
+- Recycling der Threads
+- Höhere Abstraktion
+- Anzahl Threads individuell pro System konfigurierbar
+
+5.3 Was muss bei den Tasks beachtet werden?
+Task sollten nicht voneinander abhängig sein, denn wenn alle Worker Threads mit wartende Task beschäftigt sind entsteht ein Dead lock.
+
+5.4 Was für zwei Szenarien gibt es bei Thread Pool, die zu einem Deadlock führen können?
+1. Alle Worker-Threads sind mit Tasks beschäftigt, die auf eine Bedinung warten.
+2. Die Bedingungen können nur von Tasks erfüllt werden, die in der Warteschlange stecken
+
+5.5 Wiso kann der Worker Thread nicht andere Tasks ausführen, wenn ein Task blockiert?
+Weil sonst ein neuer Task aufgerufen werden müsste.
+
+5.6 Beispiel für Task Implementierung & Ausführung
+```java
+/**
+* ComplexCalculation1 = Thread-Pool Auftrag
+* Callable<Integer> = Integer ist der Rückgabewert des Tasks
+*/
+class ComplexCalculation1 implements Callable<Integer>{
+	@Override
+	public Integer call() throws Exception {
+		intvalue = …;
+		// long calculation	
+		return value;
+	}
+}
+
+//mit java 8
+//Future<T> submit(Callable<T> task)
+Future<Integer> future = threadPool.submit(() -> {
+	int value = …;
+	// long calculation
+	return value;
+});
+```
+```java
+//Erzeugt Thread-Pool mit zwei Worker Threads
+ExecutorService threadPool = Executors.newFixedThreadPool(2);
+…
+//Handle auf Task Resultate
+Future<Integer> future1, future2;
+
+//.submit([Task]) schickt Tasks an den Thread-Pool
+future1 = threadPool.submit(new ComplexCalculation1());
+future2 = threadPool.submit(new ComplexCalculation2());
+…
+//Wartet auf Task Ende und holt die Resultate
+intresult1 = future1.get();
+intresult2 = future2.get();
+…
+//Stellt Thread-Pool ab.
+threadPool.shutdown();
+```
+
+5.7 Wie kann ein Future abgebrochen werden?
+```java
+future.cancel(boolean mayInterruptIfRunning);
+```
+
+5.8 Welche Thread-Pool Factory gibt es?
+- Executors.newFixedThreadPool(intnofThreads)
+	- Neuer Thread-Pool mit fixer Anzahl Worker Threads
+	- Meist Runtime.getRuntime().availableProcessors()für nofThreads
+- Executors.newCachedThreadPool()
+	- Kreiert automatisch so viele Threads wie benötigt
+	- Geeignet für Tasks mit blockierenden I/O Calls
+- Executors.newSingleThreadExecutor()
+	- Nur ein Worker Thread (nofThreads== 1)
+	
+5.9 Wieso blockiert Programmbeendigung ohne ExecutorService.shutdown()?	
+Weil sie als Non-Deamons implementiert sind und daher lassen sie das System am Leben.
+
+5.10 Erkläre das Fire and Forget Prinzip. Auf was muss dabei geachtet werde?
+- Tasks starten, ohne dabei das Resultat später abzuholen
+	- Callable<Void>
+```java
+ExecutorService threadPool = Executors.newFixedThreadPool();
+...
+threadPool.submit(() -> { //implementiert Callable<Void>
+	//Task implementation
+});
+...
+threadPool.shutdown();
+```
+Bei Fire and Forgot muss geachtet werden, dass wenn im Task eine Exception geworfen wird, diese ignoriert wird.
+
+5.11 Folgendes Beispiel  implementiert eine Suche als Task. Schreibe diese mit java8 um
+```java
+class SearchTaskimplements Callable<Boolean>{
+	private List<String> words;
+	private String pattern;
+
+	public SearchTask(List<String> words, String pattern) {
+		this.words= words; this.pattern= pattern;
+	}
+
+	@Override
+	public Boolean call() throws Exception {
+		for (String text : words) {
+			if (text.matches(pattern)) { return true; }
+		}
+		return false;
+	}
+}
+
+ExecutorService threadPool= Executors.newFixedThreadPool(2);
+```
+![Paralleles Suchen](https://github.com/suizo12/-HSR.modules.PnProg/blob/master/images/lr.png)
+
+```java 
+Future<Boolean> left = threadPool.submit(new SearchTask(leftPart, pattern));
+Future<Boolean> right = threadPool.submit(new SearchTask(rightPart, pattern));
+boolean found = left.get() || right.get();
+threadPool.shutdown();
+```
+Java8:
+![Paralleles Suchen Java8](https://github.com/suizo12/-HSR.modules.PnProg/blob/master/images/java812.png)
+
+5.12 Was sind Recursive Tasks? Beispiel dazu? Api?
+- Thread Pool für rekursive Tasks (ab Java 7)
+	- Tasks können Untertasks starten und abwarten
+	- Warten könnte bei ExecutorServiceDeadlock geben
+- Tasks erben von RecursiveTask<T>
+	- T compute(): Task Implementierung
+	- fork(): Starte als Sub-Task in einem anderen Task
+	- T join(): Warte auf Task-Ende und frage Resultat ab
+- RecursiveAction, falls kein Rückgabetyp
+	- void statt T
+- T invoke(ForkJoinTask<T>task)
+	- Führe Task aus und wartet auf Beendigung des Tasks
+	- T ist Resultat des Tasks (Void, wenn kein Resultat)
+- submit(ForkJoinTask<T>task)
+	- Task einreihen, aber nicht abwarten
+- ForkJoinTaskist Basisklasse von RecursiveTaskund RecursiveAction
+
+![Rekursive Tasks](https://github.com/suizo12/-HSR.modules.PnProg/blob/master/images/recursive_task1.png)
+```java
+class MySuperTaskextends RecursiveTask<Integer>{
+	@Override
+	protected Integer compute(){
+		MySubTasksub= newMySubTask(…);
+		sub.fork(); //Startet Sub-Task
+		// other work
+		sub.join(); //Wartet auf Beendigung
+		return…;
+	}
+}
+
+//Spezielle Thread-Pool für rekursive Tasks (Deamon Thread)
+ForkJoinPoolthreadPool= new ForkJoinPool();
+…
+//Führe Haupt-Task asu (wartet auf Beendigung)
+threadPool.invoke(newMySuperTask());
+```
+
+5.13 Warum ist kein Shutdown bei Fork Join Pool nötig?
+Kein Shutdown des Thread-Pool nötig, da diese als Deamon Thread laufen.
+
+5.14 Implementiere das Recursive Finden mit dem Fork Join Pool Prinzip.
+```java
+class SearchTaskextends RecursiveTask<Boolean>{
+	private List<String> words; 
+	private String pattern;
+	
+	public SearchTask(List<String> words, String pattern) {
+		this.words= words; this.pattern= pattern;
+	}
+	
+	protected Boolean compute() {
+		int n = words.size();
+		if (n == 0) { return false; }
+		if (n == 1) { return words.get(0).matches(pattern); }
+		SearchTaskleft = new SearchTask(words.subList(0, n/2), pattern);
+		SearchTaskright = new SearchTask(words.subList(n/2, n), pattern);
+		left.fork();
+		right.fork();
+		return right.join() || left.join();
+	}
+}
+```
+
+5.15 Was versteht man unter Work Stealing Thread Pool?
+![Thread Stealing](https://github.com/suizo12/-HSR.modules.PnProg/blob/master/images/thread_stealing.png)
+Verteilte Queues für weniger Contention
+- Weniger Threads streiten um gleiche Locks
+	- Viel effizienter
+- FIFO
+	- Globale Queue
+	- Verteilen zwischen Queues
+- LIFO
+	- Neue Sub-Tasks kommen zuvorderstin lokaleTask Queue
+	- Grund für Schachtelung der fork/join
+
+5.16 Was für ein Fairness-Problem ergibt sicht beim Work Stealing Thread Pool Prinzip?
+*Starvation-Gefahr*
+Wegen Priorisierung von Neuen Tasks
+
+5.17 Erkläre das Asychrone Aufruf Prinzip.
+![Asynchrone](https://github.com/suizo12/-HSR.modules.PnProg/blob/master/images/async.png)
+```java
+longresult= longOperation(); // Asynchroner Aufruf gewünscht, Aufrufer unnötig blockiert
+otherWork();
+process(result);
+```
+Gut für I/O Calls oder aufwendige Berechnungen
+
+5.17 Wie wird der Asynchrone aufruf mit Java8 implementiert?
+```java
+//Asynchroner Aufruf mittels Thread-Pool		1 Worker-Thread reicht hier für asynchrone Abarbeitung
+ExecutorService threadPool					= 	Executors.newSingleThreadExecutor();
+Future<Long> future = threadPool.submit(() ->longOperation()); //longOperation, Thread-Pool Task als Lambda
+otherWork();
+process(future.get // Resultat über Future
+threadPool.shutdown();
+```
+
+5.18 Wie wird Callback Asynchrone implementiert?
+```java
+interface CallbackHandler<T> {
+	void handleResult(T result);
+}
+
+class MyMath{
+	ExecutorServicethreadPool= …;
+	
+	void asyncLongOperation(long input, CallbackHandler<Long> callback) { //CallbackHandler<Long> as Parameter mitgeben.
+		threadPool.submit(() -> {
+			long result = longOperation(input);
+			//Callback am Schluss der asynchronen Arbeit
+			callback.handleResult(result);
+		});
+	}
+}
+```
+
+5.19 Von welchem Thread wird der Thread / der callback aufgerufen?
+Callback wird von einem anderem Thread als der vom Aufrufen ausgeführt.
+Synchronisation ist eventuell nötig zwischen Caller und Worker Thread.
+![Asynchrone Synchronisation](https://github.com/suizo12/-HSR.modules.PnProg/blob/master/images/async_sync.png)
+
+5.20 Wie wird diser Callback mit Synchronisation implementiert?
+```java
+class Calculator {
+	private booleanisRunning= false;
+	
+	public synchronized void test() {
+		if (!isRunning) { //Mehrfachausführung z.B. ignorieren
+			isRunning= true;
+			MyMath.asyncLongOperation(N, (result) -> {
+				show(result);
+				synchronized(this) {
+					//Kann frühestens eintreten, wenn test() fertig ist
+					isRunning= false;
+				}
+			}
+		}
+	}
+}
+```
+
+5.21 Wann braucht es Synchronisation beim Callback?
+![Callback Synchronisation](https://github.com/suizo12/-HSR.modules.PnProg/blob/master/images/callback_sync.png)
+Wenn das Resultat in Zukunft gebraucht wird. 
+Wenn der Rote Thread einen Callback macht und dieser mit dem Laufendem Thread synchronisiert wird.
+
+## .NET
+
+6.1 Was sind die Unterschiede zwischen Java8 und .net c#
+- | Java | C#
+--------------- | --------------- | ---------------
+neuer Thread | new Thread(() -> { // threadbehavior }); | new Thread(() => { //threadbehavior });
+Zugriff auf variablen in Runnable(java) / lambdas(c#) | nur read (effectively final) | write / read -> Prädesteniert für Data Races
+Synchronize Block | synchronize( Object ){} | lock( syncObject) {}
+Monitor | |
+while um wait | nötig | nötig
+monitor.wait() | | Monitor.Wait(syncObject);
+notify | notifyAll(); | Monitor.PulseAll(syncObject);
