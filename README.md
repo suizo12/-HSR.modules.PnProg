@@ -1200,3 +1200,356 @@ task.ContinueWith(otherTask).ContinueWith(otherTask);// führe etwas nach
 ```
 Wenn url von aussen geändert wird kann eine RaceCondition entstehen.
 
+## .Net Gui und Threading
+7.1 Aufgrund welcher Motivation basieren GUI-Frameworks auf einem Single-Thread Modell?
+- Deadlock-Risiko
+- Synchronisationskosten
+
+7.2 Welche Einschränkungen ergeben sich aus dem GUI-Thread Modell?
+- Geschwindigkeitsverlust.
+- Programmierer müssen sich dem Bewusst sein.
+
+7.3 Was wird von welchem Thread ausgeführt und wieso?
+```java
+class MyButtonActionListener implements ActionListener{
+	@Override
+	public void actionPerformed(ActionEvent arg) {
+		new Thread(() -> {
+			String text = readHugeFile();
+			SwingUtilities.invokeLater(() -> {
+				textArea.setText(text);
+			});
+		}).start();
+	}
+}
+```
+![UI dispatching Analyse](https://github.com/suizo12/-HSR.modules.PnProg/blob/master/images/ui1.png)
+
+7.4 Was eignet sich anstatt des Thread.start()?
+Task
+
+7.5 An welchen Stellen sind RaceConditionsmöglich?
+```java
+public static void main(String[] args) {
+	final JFramef = new JFrame("Labels");
+	// ...
+	f.pack();
+	f.setVisible(true);
+	// ...
+}
+```
+![UI dispatching Analyse](https://github.com/suizo12/-HSR.modules.PnProg/blob/master/images/ui2.png)
+
+7.6 Wie kann das Problem von 7.5 gelöst werden?
+```java
+public static void main(String args[]) {
+	final JFrameframe = new JFrame("MyFrame");
+	JButton button = new JButton();
+	button.setText("Click");
+	frame.getContentPane().add(button, ..);
+	frame.setSize(200, 100);
+	// ...
+	// !! pack()& setVisible()im Event DispatchThread ausführen !!
+	SwingUtilities.invokeLater(() -> {
+		frame.pack();
+		frame.setVisible(true);
+	});
+}
+```
+pack()& setVisible()im Event DispatchThread ausführen
+
+7.7 Was ist am folgendem Code falsch? wie kann dies Korrigiert wernde?
+```c#
+public async Task<bool> IsPrimeAsync(longnumber) {
+	for(longi = 2; i <= Math.Sqrt(number); i++) {
+		if(number% i == 0) { returnfalse; }
+	}
+	return true;
+}
+```
+Diese Methode läuft synchron da kein await gibt, was die methode asynchrom machen würde
+```c#
+public async Task<bool> IsPrimeAsync(long number) {
+	return await Task.Run(() => {
+		for (long i= 2; i<= Math.Sqrt(number); i++) {
+			if (number % i== 0) { return false; }
+		}
+		return true;
+	});
+}
+```
+
+7.8 Was ist die Ausgabe des folgenden Code, ewnn kein UI / Synchronisationskontext mit Dispatcher vorhanden ist?
+```c#
+public async Task DownloadAsync() {
+	Console.WriteLine("BEFORE "+ Thread.CurrentThread.ManagedThreadId);
+	HttpClient client= new HttpClient();
+	Task<string> task = client.GetStringAsync("...");
+	string result= await task;
+	Console.WriteLine("AFTER " + Thread.CurrentThread.ManagedThreadId);
+}
+```
+!!Partielle Nebenläufigkeit berücksichtigen!!
+> BEFORE 10
+> ...
+> AFTER 14
+
+7.9 Beurteile das Async-Await Model.
+- Eine Async-Methode => Zwei Aufruffälle
+	- Mit und ohne Synchronisationskontext
+- Viraler Effekt: async/await-Aufrufer wird auch async
+	- Unnötig komplexe Methodensignaturen mit Tasks
+	- Kosten wegen interner Methodenzerstückelung
+- Synchrone/asynchrone Verwendung sollte meist orthogonal sein
+	- "Caller" sollte entscheiden, nicht "Callee"
+
+7.10 Wie kann ein solches Problem(InvalidOperationException Collection was modified) auftreten, zumal es keine echte Parallelität im GUI-Code gibt?
+```c#
+async void startDownload_Click(…) {
+	HttpClient client = newHttpClient();
+	foreach(var url in collection) {
+		var data= await client.GetStringAsync(url);
+		textArea.Content+= data; //InvalidOperationException Collection was modified
+	}
+}
+```
+
+##Memory Models
+8.1 Was sind die möglichen Werte für i und j?
+![Memory Models](https://github.com/suizo12/-HSR.modules.PnProg/blob/master/images/m1.png)
+
+j | i
+--------- | ---------
+1 | 0
+0 | 1
+1 | 1
+0 | 0
+
+denn der Code kann ungeordnert werden (performance optimierung.)
+
+![Memory Models](https://github.com/suizo12/-HSR.modules.PnProg/blob/master/images/m2.png)
+
+8.2 Beschreibe das Problem bei Nebenläufigkeit bei Memory Models.
+- Weak Consistency
+- Optimierung
+
+8.3 Erkläre die Begriffe Atomicity, Visibility, Ordering im Zusammenhang mit Java Memory Model 
+- Atomicity(Unteilbarkeit) 
+	- von Lese-und Schreibzugriffe auf Speicher
+- Visibility(Sichtbarkeit) 
+	- aktueller Speicherwerte zwischen Threads
+- Ordering(Reihenfolge)
+	- von Lese-/Schreibeoperationen auf Speicher
+	
+8.4 Welche Werte in Java Garantieren Atomicity?
+- Zugriff auf Variable (Lesen/Schreiben) ist atomar für
+	- Primitive Datentypen bis 32 Bit
+		- Nicht longund double
+	- Objekt-Referenzen
+		- Egal ob intern 32 Bit oder 64 Bit
+	- Mit volatile Keyword
+		- longund double dann auch atomar
+		
+8.5 Welche Anweisungen sind atomar?
+1.longl = -1;
+2.double d = 3.14;
+3.inti = 1;
+4.String s = "first";
+5.booleanb = true;
+...
+6.i = (int)l;
+7.l = 42;
+8.i = 7;
+9.++i;
+10.s = "second";
+11.d = d * i;
+12.s = null;
+13.b = false;
+![Atomicity](https://github.com/suizo12/-HSR.modules.PnProg/blob/master/images/m3.png)
+
+8.6 Was ist das Problem hier?
+```java
+class Worker extends Thread {
+	private booleandoRun= true;
+
+	public void run() {
+		while(doRun) {
+			…
+		}
+	}
+	
+	public void stopRequest() {
+		doRun= false;
+	}
+}
+```
+- Sehe Änderungen eines anderen Thread eventuell nicht oder viel später
+	- Wegen Register (oder im Java Memory Model Cache)
+- Compiler-Optimierung
+	- Hält Variablenwert eventuell in Register
+```
+//!!Endlosschlaufe!!
+void run() {
+	load doRun to reg1;
+	while(reg1) {
+		…
+	}
+}
+```
+
+8.7 Wenn ist die Visibility (Sichtbarkeit) Garantiert?
+- Locks Release & Acquire
+	- Schreibender Thread ruft Release und lesender Thread ruft Acquirefür denselben Lock auf
+- Volatile Variablen
+	- Lese/Schreibe-Zugriff darauf
+- Initialisierung von final Variablen
+	- Nach Ende des Konstruktors
+- Thread-Start und Join
+	- Ebenso Task Start und Ende
+	
+8.8 Wo ist die Sichtbarkeit von x==1 garantiert?
+![Visibility](https://github.com/suizo12/-HSR.modules.PnProg/blob/master/images/m4.png)
+1. Garantiert
+2. Nicht Garantiert
+3. Garantiert (Ausser wenn x während des Constructors gelesen wird.)
+4. Garantiert
+
+8.9 Wie kann man das hier korrigieren? Finden Sie zwei Lösungsmöglichkeiten.
+```java
+class Worker extends Thread {
+	private boolean doRun = true;
+	
+	public void run() {
+		while(shouldRun()) {
+			…
+		}
+	}
+	
+	private boolean shouldRun() {
+		return doRun;
+	}
+	public void stopRequest() {
+		doRun = false;
+	}
+}
+```
+
+Lösung 1 mit Synchronized
+```java
+class Worker extends Thread {
+	private boolean doRun = true;
+	
+	public void run() {
+		while(shouldRun()) {
+			…
+		}
+	}
+	
+	private synchronized boolean shouldRun() {
+		return doRun; //Visibility wegen Lock Acquire
+	}
+	public synchronized void stopRequest() {
+		doRun = false; //Visibility wegen Lock Release
+	}
+}
+```
+
+Lösung 2 mit volatile
+```java
+class Worker extends Thread {
+	private volatile boolean doRun = true;//Visibility mittels volatile Variable
+	
+	public void run() {
+		while(shouldRun()) {
+			…
+		}
+	}
+	
+	private boolean shouldRun() {
+		return doRun;
+	}
+	public void stopRequest() {
+		doRun = false;
+	}
+}
+//!!Volatile verhindert Data Raceauf Variable!!
+```
+
+8.8 Was änderet das Keyword volatile alles bezüglich, Atomicity, Visibility und Reordering?
+- Atomicity
+	- Atomares Lesen & Schreiben auch für longund double
+	- Achtung: Andere Operationen sind nicht atomar (i++ etc.)
+- Visibility
+	- Lese und Schreibzugriffe via Hauptspeicher propagiert
+	- Achtung: Kein Sperren im Gegensatz zu Locks
+- Reordering
+	- Keine Umordnungdurch Compiler / Laufzeitsystem / CPU
+	- Achtung: Nicht-volatile Variablen werden evtl. umgeordnet
+	
+8.9 Wenn kann Ordering angewendet werden?
+- Innerhalb eines Threads: «As-If-Serial» Semantik
+	- Umsortieren von Instruktionen erlaubt, falls sequentielles Verhalten aus Sicht eines Threads gleich bleibt
+- Zwischen Threads: Reihenfolge nur erhalten für
+	- Synchronisationsbefehle
+		- synchronized, Lock Acquire/ Release
+	- Zugriffe auf volatile Variablen
+- Nicht-volatile Zugriffe werden nicht über Grenzen von Synchronisation oder volatile Zugriffe optimiert
+	- Memory Barriers/ Memory Fences
+
+8.10 Welche Umordnungensind möglich?
+![Ordering](https://github.com/suizo12/-HSR.modules.PnProg/blob/master/images/m5.png)
+1. Ja
+2. Nein
+3. Nein
+4. Nein
+
+8.11 Was ist der Unterschied zwischen volatile und Synchonized?
+
+- | Volatile | Synchronized
+--------------- | --------------- | ---------------
+Atomarität | Einzelnes Lesen/Schreiben | Gesamter Statement Block
+Blockierung(Lock & Wait) | Nein | Ja
+Garantiert Sichtbarkeit | Ja | Ja
+Verhindert Reordering | Ja | Ja
+
+8.12 Welches Problem sehen Sie hier?
+```java
+do {
+	oldValue = var.get(); //Lese aktuellen Wert
+	newValue = calculateChanges(oldValue);
+} while (!var.compareAndSet(oldValue, newValue)); //compareAndSet: Schreibe, falls gelesener Wert immer noch aktuell ist
+```
+Anderer Thread schreibt unbemerkt dazwischen
+![ABA Problem](https://github.com/suizo12/-HSR.modules.PnProg/blob/master/images/m6.png)
+
+8.13 Wieso ist Double CheckedLocking ohne volatile falsch?
+```java
+class LazyCreation{
+	private volatile LargeObject instance;
+	
+	public LargeObjectget() {
+		if (instance== null) {
+			synchronized (this) {
+				if (instance == null) {
+					instance = new LargeObject();
+				}
+			}
+		}
+		return instance;
+	}
+}
+```
+
+Thread 1 | Instance | Thread 2
+--------------- | --------------- | ---------------
+If (instance == null) | Null | If (instance == null)
+Sync -> waiting | Instance = some value | Sync -> ok
+ |  | Create instance =
+ |  | Return instance
+Enter sync block |  | 
+
+Weil der Konstruktor vor dem instance = x aufgerufen werden kann (vom Compiler) -> Daher Race Condition -> wenn 
+>T1
+>Instance = x
+>Constructor
+Dann kann sein, dass das Object noch nicht richtig generiert wurde,  jedoch instance = x wurde scho geschrieben und d.h. würde ein T2 instance == null false geben.
