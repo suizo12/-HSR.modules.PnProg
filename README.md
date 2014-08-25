@@ -29,7 +29,7 @@ Thread myThread= new SimpleThread();
 //start thread
 myThread.start();
 
-//-------------------------------------------//
+//	-	-	-	-	-	-	-	-	-	-	-	-	-	-	-	-	-	-	-	-	--//
 //Runnable Implementation
 class SimpleLogic implements Runnable{
 	@Override
@@ -43,7 +43,7 @@ Thread myThread= new Thread(new SimpleLogic());
 //start thread
 myThread.start();
 
-//-------------------------------------------//
+//	-	-	-	-	-	-	-	-	-	-	-	-	-	-	-	-	-	-	-	-	--//
 //Ad-Hoc implementation entspricht Thread implementation
 Thread myThread= new Thread(() -> {
 	// threadbehavior
@@ -193,7 +193,7 @@ private int balance= 0;
 }
 ```
 Thread 1 | Balance | Tgread 2
------------- | ------------ | -------------
+	-	-	-	-	-	- | 	-	-	-	-	-	- | 	-	-	-	-	-	--
 read balance => reg(reg== 0) | 0 |
 | 0 | read balance => reg(reg== 0)
 reg= reg+ amount (reg== 100) | 0 | 
@@ -224,7 +224,7 @@ class BankAccount{
 ```
 Schlaufe und Zuweisung ist nicht atormar
 Thread 1 | locked | Tgread 2
------------- | ------------ | -------------
+	-	-	-	-	-	- | 	-	-	-	-	-	- | 	-	-	-	-	-	--
 Read locked in loop(locked== false) | false | Read locked in loop(locked== false)
 Write locked= true | true | Write locked= true
 Critical section |  | Critical section
@@ -363,17 +363,17 @@ notifyAll();
 
 2.16 Erkläre warum der Monitor ein Effizienz Problem hat?
 - Beim mehreren Wartebedingungen
--- notifyAll(): Wecke prophylaktisch immer alle
--- Alle treten nacheinander in Monitor ein
--- Für einen ist Bedingung erfülllt
--- Andere rufen wieder wait() auf 
+	- notifyAll(): Wecke prophylaktisch immer alle
+	- Alle treten nacheinander in Monitor ein
+	- Für einen ist Bedingung erfülllt
+	- Andere rufen wieder wait() auf 
 - Viele Kontext-Wechsel
 - Hohe Synchronisationskosten
 
 2.17 Erläutere warum der Monitor nicht "fair" ist:
 - Java: Keine garantierte FIFO-Warteschlange
 - Signal-and-Continue
--- Theoretisch möglich, dass ein Thread ewig von anderen Threads überholt wird.
+	- Theoretisch möglich, dass ein Thread ewig von anderen Threads überholt wird.
 
 2.18 
 ```java
@@ -398,7 +398,7 @@ public class Turnstile {
 ```
 Ja es bruacht die wait()-Schlaufe:
 Thread | Method -> Status | Waiting
------------- | ------------ | -------------
+	-	-	-	-	-	- | 	-	-	-	-	-	- | 	-	-	-	-	-	--
 T1 | pass() -> wait() | T1 
 T2 | open()-> notify() | T1
 T3 |  drausen -> noch kein status | T1, T3
@@ -455,7 +455,7 @@ Schritt 2 Synchronized ersetzten
 
 3.5 Wie wird notify(), wait(), while um wait() und synchonized mit semaphoren ersetzt?
 Monitor | Semaphor
------------- | ------------
+	-	-	-	-	-	- | 	-	-	-	-	-	-
 notifyAll() | release(), gibt Resource frei, benarchritig Wartende.
 wait() | acquire(), Bezieht freie Ressource.
 while um wait() | acquire(), Wartet wenn keine Ressource verfügbar ist.
@@ -463,9 +463,9 @@ synchronized | Binare Semaphore: Anstatt synchronized wird der Kritischer Block 
 
 3.6 Wie wird mit "Lock & Conditions" den Monitor umgesetzt?
 -Lock-Objekt: Sperre für Eintritt in Monitor
--- Äussere Warteliste
+	- Äussere Warteliste
 - Condition-Objekt: Wait& Signal für bestimmte Bedingung
--- Innere Warteliste
+	- Innere Warteliste
 
 3.7 Zeichne die UML Struktur des Lock & Condition"
 ![Lock & Condition](https://github.com/suizo12/-HSR.modules.PnProg/blob/master/images/lc_uml.png)
@@ -508,7 +508,7 @@ class BoundedBuffer<T> {
 
 3.10 Welche Read - Write zugriffe können parallel geschene?
 Parallel | Read | Write
------------- | ------------ | -------------
+	-	-	-	-	-	- | 	-	-	-	-	-	- | 	-	-	-	-	-	--
 Read | Ja | Nein
 Write | Nein | Nein
 
@@ -532,16 +532,16 @@ Semaphore readyCars = new Semaphore(0);
 Semaphore startAllows = new Semaphore(0);
 
 //N Cars:							RaceControl:
-readyCars.release(); 	---------> 	readyCars.acquire(N);
-startAllows.acquire();		<---------	startAllows.release(N);
+readyCars.release(); 		-	-	-	--> 	readyCars.acquire(N);
+startAllows.acquire();		<	-	-	-	--	startAllows.release(N);
 ```
 ```java
 CountDownLatch carsReady = new CountDownLatch(N);
 CountDownLatch startSignal = new CountDownLatch(1);
 
 //N Cars:							RaceControl:
-carsReady.countDown(); 	---------> 	startSignal.await();
-carsReady.await();		<---------	startSignal.countDown();
+carsReady.countDown(); 		-	-	-	--> 	startSignal.await();
+carsReady.await();		<	-	-	-	--	startSignal.countDown();
 ```
 
 3.15 Zeichne ein Beispiel der CountDown Latch auf.
@@ -549,21 +549,21 @@ carsReady.await();		<---------	startSignal.countDown();
 
 3.16 Wie funktioniert das Barriere prinzip.
 -Anzahl Teilnehmer bei Konstruktorfestlegen
---Nicht mehr änderbar
---intgetParties()
+	-Nicht mehr änderbar
+	-intgetParties()
 -Passieren bei Barriere
---int await()
---Rückgabe: Anzahl noch fehlender Threads bei Barriere
---- > 0: Warten
---- == 0: Barriere öffnen und Wartende aufwecken
+	-int await()
+	-Rückgabe: Anzahl noch fehlender Threads bei Barriere
+	-- > 0: Warten
+	-- == 0: Barriere öffnen und Wartende aufwecken
 - «BrokenBarrier»
--- Problem: Exceptionin await, z.B. InterruptedException
--- Alle sind betroffen => BrokenBarrierException
+	- Problem: Exceptionin await, z.B. InterruptedException
+	- Alle sind betroffen => BrokenBarrierException
 
 3.17 Vergleich Latch mit Barriere.
 ![Latch vs Barrier](https://github.com/suizo12/-HSR.modules.PnProg/blob/master/images/lb.png)
- | Latch | Barriere
------------- | ------------ | -------------
+- | Latch | Barriere
+	-	-	-	-	-	- | 	-	-	-	-	-	- | 	-	-	-	-	-	--
 Initialisierung | new CountDownLatch(N); | new CyclicBarrier(N);
 N = Zähler bedeutet? | Initialwert für den Counter | Anzahl 
 Wie wird n runtegezählt? | .countDown(); | .await(); 
@@ -572,21 +572,21 @@ Wiederverwendbarkeit | Nein | Ja
 
 3.18 Wie funktioniert das Phaser Prinzip?
 - Verallgemeinerte CyclicBarrier
--- arriveAndAwaitAdvance(): Barriere passieren
--- Kann Teilnehmer später anmelden / abmelden
---- register()bzw. arriveAndDeregister()
---- Wird bei nächster Warterunde wirksam
+	- arriveAndAwaitAdvance(): Barriere passieren
+	- Kann Teilnehmer später anmelden / abmelden
+	-- register()bzw. arriveAndDeregister()
+	-- Wird bei nächster Warterunde wirksam
 ![Phaser](https://github.com/suizo12/-HSR.modules.PnProg/blob/master/images/phaser.png)
 
 3.19 Wie funktioniert das Rendez-Vous Prinzip?
 - Barriere mit Informationsaustausch
--- Spezialfall: Nur 2 Parteien
+	- Spezialfall: Nur 2 Parteien
 - Zwei Threads treffen sich und tauschen Objekte aus
--- Ohne Austausch: newCyclicBarrier(2)
--- Mit Austausch: Exchanger.exchange(something)
+	- Ohne Austausch: newCyclicBarrier(2)
+	- Mit Austausch: Exchanger.exchange(something)
 - V exchange(Vx)
--- Blockiert, bis anderer Thread auch exchange() aufruft
--- Liefert Argument x des jeweils anderen Threads
+	- Blockiert, bis anderer Thread auch exchange() aufruft
+	- Liefert Argument x des jeweils anderen Threads
 ![Barrier vs Exchanger](https://github.com/suizo12/-HSR.modules.PnProg/blob/master/images/be.png)
 
 3.20 Gebe ein Beispiel für das Rendez-Vous Prinzip.
@@ -619,12 +619,25 @@ Thread-1 got 4
 
 3.22 Was ist der Unterschied zwischen Java Monitor vs Lock & Condition?
 - | Java Monitor | Lock & Condition
------------- | ------------ | -------------
+	-	-	-	-	-	- | 	-	-	-	-	-	- | 	-	-	-	-	-	--
 Inneren Warteraum | 1 | Mehrere
 Implementierung | API | In java integriert
 
 3.23 Was ist der Unterschied zwischen Semaphore vs CountDownLatch?
 - | Semaphore | CountDownLatch
------------- | ------------ | -------------
+	-	-	-	-	-	- | 	-	-	-	-	-	- | 	-	-	-	-	-	--
 Blocking Counter(N) bei | Wenn alle N vergeben sind (N = 0) | Solange N noch verfügbar sind (N > 0)
 Counter Eigenschaft | Kann erhöht werden | Kann nicht erhöht werden
+
+## Gefahren der Nebenläufigkeit
+4.1 Was sind Race Condition, Deadlocks, Starvation?
+- Race Condition
+	- Ungenügend synchronisierte Zugriffe auf gemeinsame Ressourcen
+	- Zwei Stuffen
+		- Data Races (low-level)
+		- Semantisch höhere Race Condition (high-level)
+- Deadlocks
+	- Gegenseitiges Aussperren von Threads
+- Starvation
+	- Kontinuierliche Fortschrittsbehinderung eines Threads wegen Fairness-Probleme
+Parallele
