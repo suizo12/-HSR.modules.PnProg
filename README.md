@@ -221,11 +221,11 @@ class BankAccount{
 }
 ```
 Schlaufe und Zuweisung ist nicht atormar
-Thread 1 | locked | Tgread 2
+Thread 1 | locked | Thread 2
 --------------- | --------------- | ---------------
-Read locked in loop(locked== false) | false | Read locked in loop(locked== false)
+Read locked in loop(locked== false) | false | Read locked in loop(locked == false)
 Write locked= true | true | Write locked= true
-Critical section |  | Critical section
+Critical section | - | Critical section
 
 2.5 Gegeben sein eine Klasse mit n Sychronisierten Methoden. Ist es möglich das zwei Methoden N der gleichen Instanz gleichzeitig ausgeführt werden?
 Nein, nur ein Thread kann eine der synchronisierten Methoden in derselben Instanz zur gleichen Zeit ausführen.
