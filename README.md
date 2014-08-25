@@ -193,7 +193,7 @@ private int balance= 0;
 }
 ```
 Thread 1 | Balance | Tgread 2
-	-	-	-	-	-	- | 	-	-	-	-	-	- | 	-	-	-	-	-	--
+--------------- | --------------- | ---------------
 read balance => reg(reg== 0) | 0 |
 | 0 | read balance => reg(reg== 0)
 reg= reg+ amount (reg== 100) | 0 | 
@@ -224,7 +224,7 @@ class BankAccount{
 ```
 Schlaufe und Zuweisung ist nicht atormar
 Thread 1 | locked | Tgread 2
-	-	-	-	-	-	- | 	-	-	-	-	-	- | 	-	-	-	-	-	--
+--------------- | --------------- | ---------------
 Read locked in loop(locked== false) | false | Read locked in loop(locked== false)
 Write locked= true | true | Write locked= true
 Critical section |  | Critical section
@@ -398,7 +398,7 @@ public class Turnstile {
 ```
 Ja es bruacht die wait()-Schlaufe:
 Thread | Method -> Status | Waiting
-	-	-	-	-	-	- | 	-	-	-	-	-	- | 	-	-	-	-	-	--
+--------------- | --------------- | ---------------
 T1 | pass() -> wait() | T1 
 T2 | open()-> notify() | T1
 T3 |  drausen -> noch kein status | T1, T3
@@ -455,7 +455,7 @@ Schritt 2 Synchronized ersetzten
 
 3.5 Wie wird notify(), wait(), while um wait() und synchonized mit semaphoren ersetzt?
 Monitor | Semaphor
-	-	-	-	-	-	- | 	-	-	-	-	-	-
+---------------| 	-	-	-	-	-	-
 notifyAll() | release(), gibt Resource frei, benarchritig Wartende.
 wait() | acquire(), Bezieht freie Ressource.
 while um wait() | acquire(), Wartet wenn keine Ressource verfügbar ist.
@@ -508,7 +508,7 @@ class BoundedBuffer<T> {
 
 3.10 Welche Read - Write zugriffe können parallel geschene?
 Parallel | Read | Write
-	-	-	-	-	-	- | 	-	-	-	-	-	- | 	-	-	-	-	-	--
+--------------- | --------------- | ---------------
 Read | Ja | Nein
 Write | Nein | Nein
 
@@ -563,7 +563,7 @@ carsReady.await();		<	-	-	-	--	startSignal.countDown();
 3.17 Vergleich Latch mit Barriere.
 ![Latch vs Barrier](https://github.com/suizo12/-HSR.modules.PnProg/blob/master/images/lb.png)
 - | Latch | Barriere
-	-	-	-	-	-	- | 	-	-	-	-	-	- | 	-	-	-	-	-	--
+--------------- | --------------- | ---------------
 Initialisierung | new CountDownLatch(N); | new CyclicBarrier(N);
 N = Zähler bedeutet? | Initialwert für den Counter | Anzahl 
 Wie wird n runtegezählt? | .countDown(); | .await(); 
@@ -584,7 +584,7 @@ Wiederverwendbarkeit | Nein | Ja
 - Zwei Threads treffen sich und tauschen Objekte aus
 	- Ohne Austausch: newCyclicBarrier(2)
 	- Mit Austausch: Exchanger.exchange(something)
-- V exchange(Vx)
+- V exchange(V x)
 	- Blockiert, bis anderer Thread auch exchange() aufruft
 	- Liefert Argument x des jeweils anderen Threads
 ![Barrier vs Exchanger](https://github.com/suizo12/-HSR.modules.PnProg/blob/master/images/be.png)
@@ -592,13 +592,13 @@ Wiederverwendbarkeit | Nein | Ja
 3.20 Gebe ein Beispiel für das Rendez-Vous Prinzip.
 ```java
 Exchanger<Integer> exchanger = new Exchanger<>();
-for (intk = 0; k < 2; k++) {
+for (int k = 0; k < 2; k++) {
 	new Thread(() -> {
 		for (int in = 0; in < 5; in++) {
 			try {
-				intout = exchanger.exchange(in);
+				int out = exchanger.exchange(in);
 				System.out.println(Thread.currentThread().getName() + " got " + out);
-			} catch (InterruptedExceptione) { }
+			} catch (InterruptedException e) { }
 		}
 	}).start();
 }
@@ -619,25 +619,171 @@ Thread-1 got 4
 
 3.22 Was ist der Unterschied zwischen Java Monitor vs Lock & Condition?
 - | Java Monitor | Lock & Condition
-	-	-	-	-	-	- | 	-	-	-	-	-	- | 	-	-	-	-	-	--
+--------------- | --------------- | ---------------
 Inneren Warteraum | 1 | Mehrere
 Implementierung | API | In java integriert
 
 3.23 Was ist der Unterschied zwischen Semaphore vs CountDownLatch?
 - | Semaphore | CountDownLatch
-	-	-	-	-	-	- | 	-	-	-	-	-	- | 	-	-	-	-	-	--
+--------------- | --------------- | ---------------
 Blocking Counter(N) bei | Wenn alle N vergeben sind (N = 0) | Solange N noch verfügbar sind (N > 0)
 Counter Eigenschaft | Kann erhöht werden | Kann nicht erhöht werden
 
 ## Gefahren der Nebenläufigkeit
 4.1 Was sind Race Condition, Deadlocks, Starvation?
 - Race Condition
-	- Ungenügend synchronisierte Zugriffe auf gemeinsame Ressourcen
-	- Zwei Stuffen
-		- Data Races (low-level)
-		- Semantisch höhere Race Condition (high-level)
+	- Ungenügend synchronisierte Zugriffe auf gemeinsame Ressourcen	
+	- Data Races (low-level)
+		- Selbe Variable oder Array Element (mind. ein Write Zugriff von einem Thread)
+	- Semantisch höhere Race Condition (high-level)
+		- Low-Level Data Race mit Synchronisation elimiert
+		- Critical Section nicht vollkommen unterstützt
 - Deadlocks
 	- Gegenseitiges Aussperren von Threads
 - Starvation
 	- Kontinuierliche Fortschrittsbehinderung eines Threads wegen Fairness-Probleme
+	- Liveness/Fairness Problem
 Parallele
+
+4.2 Wie bzw wann kann man Synchronisation weglassen?
+- Immutabiliy (final, nur lesen)
+- Confinement (Einsperrung)
+	- Thread Confinement
+		- Objekt nur über Referenzen von einem Thread erreichbar
+	- ObjectConfimement
+		- Objekt in anderem bereits synchronisierten Objekt eingekapselt
+
+4.3 Gebe ein Beispiel zu Immutabiliy.
+![Immutable](https://github.com/suizo12/-HSR.modules.PnProg/blob/master/images/immutable.png)
+
+4.4 Gebe ein Beispiel zu Confinement und worauf muss man achten?
+![Confinement](https://github.com/suizo12/-HSR.modules.PnProg/blob/master/images/confinement.png)
+![Confinement](https://github.com/suizo12/-HSR.modules.PnProg/blob/master/images/confinement2.png)
+Bei Confinement muss geschaut werden, dass die die Inneren Objecten nicht:
+- von aussen zugreiffbar sein
+- nicht an äusseren Objekten zurückgegeben werden
+- sie denn Inneren "Raum" nicht verlassen
+
+	
+4.5 Welche Java Collection sind Thread save?
+Version | Beispiel | Threadsicher
+--------------- | --------------- | ---------------
+AlteJava 1.0 Collections | Vector,Stack, Hashtable | JA
+Moderne Collections(java.util, Java > 1.0) | HashSet, TreeSet, ArrayList, LinkedList, HashMap, TreeMap | NEIN
+ConcurrentCollections(java.util.concurrent) | ConcurrentHashMap, ConcurrentLinkedQueue, CopyOnWriteArrayList, … | JA
+
+4.6 Wiso sind die modernen Collection nicht mehr Thread save?
+- Oft ist Synchronisation nicht nötig
+	- Confinement=> Unnötige Synchronisationskosten
+- Synchronisation meist ungenügend
+	- Elemente sind nicht synchronisiert
+	- Iteration der Elemente ist nicht synchronisiert
+
+4.7 Wie kann man die Moderne Collection (java.util, Java > 1.0) synchronisieren. zb. eine neue synchrone ArrayList generieren?
+```java
+List list = Collections.synchronizedList(new ArrayList());
+```
+Achtung Elemente sind nicht synchronisiert!
+![Synchronized List Elements](https://github.com/suizo12/-HSR.modules.PnProg/blob/master/images/sle.png)
+
+4.8 Auf was muss bei Iterieren mit Nebenläufigkeit geachtet werden?
+- Iteration einer synchronisierten Collection ist nicht als Ganzes synchronisiert
+	- Nur Einzelzugriffe für sich sind synchronisiert
+- Anderer Thread kann die Collection parallel ändern
+	- Semantisch höhere RaceCondition
+	- Liefert vielleicht Exception, kann auch korrumpieren
+![Nested LocksDeadlock](https://github.com/suizo12/-HSR.modules.PnProg/blob/master/images/iter_sync.png)
+
+4.9 Wie kann beim Iterator Cliet-Side Locking implementiert werden?
+```java
+Collection<T> c = Collections.synchronizedCollection(myCollection);
+…
+synchronized(c) {
+	for (T element : c) {
+		// use element
+	}
+}
+Map<String, T> m = Collections.synchronizedMap(myHashMap);
+…
+Set<String> s = m.keySet(); // Collection view
+synchronized(m) { // !!!Muss m locken, nicht s!!!
+	for (String key : s) {
+		// use key
+	}
+}
+```
+
+4.10 Welches Problem kann hier auftretten?
+![Nested Locks](https://github.com/suizo12/-HSR.modules.PnProg/blob/master/images/nested_locks.png)
+Dead Lock: 
+![Nested LocksDeadlock](https://github.com/suizo12/-HSR.modules.PnProg/blob/master/images/nl_deadlock.png)
+
+4.11 Welches Problem kann hier auftretten?
+```java
+class BankAccount{
+	private int balance;
+	
+	public synchronized void transfer(BankAccount to, int amount) {
+		balance -= amount;
+		to.deposit(amount);
+	}
+	
+	public synchronized void deposit(int amount) {
+		balance+= amount;
+	}
+}
+/**
+*	Thread1					Thread2
+*	a.transfer(b, 20);		b.trasnfert(a, 50);
+*/
+```
+
+to.deposit(amount); <- Implizit geschachtelter Lock
+![Nested Deadlock](https://github.com/suizo12/-HSR.modules.PnProg/blob/master/images/dlock.png)
+
+4.12 Was muss alles zutreffen das es zu einem Deadlock kommt?
+- Gegenseitiger Ausschluss (Locks)
+- Geschachtelte Locks
+- Zyklische Warteabhängigkeiten
+- Sperren ohne Timeout/Abbruch
+
+4.13 Wie können deadlocks verhindert werden?
+- Lineare Ordnung der Ressourcen einführen
+	- Nur geschachtelt in aufsteigender Reihenfolge sperren
+![Deadlock verhindern](https://github.com/suizo12/-HSR.modules.PnProg/blob/master/images/dlock2.png)
+- Grobgranulare Locks wählen
+	- Wenn Ordnung nicht möglich/sinnvoll	
+![Deadlock verhindern](https://github.com/suizo12/-HSR.modules.PnProg/blob/master/images/dlock1.png)
+
+4.14 Was sind Livelocks?
+- Threads haben sich gegenseitig permanent blockiert
+	- Führen aber noch Warteinstruktionen aus
+	- Verbrauchen CPU während Deadlock
+![Livelocks](https://github.com/suizo12/-HSR.modules.PnProg/blob/master/images/livelock.png)
+
+4.15 Wie kann Starvation vermieden wernde?
+- Faire Synchronisationskonstrukte
+	- Länger wartende Threads mit erfüllter Bedingung haben Vortritt
+	- Fairness einschalten in Java Semaphore, Lock & Condition, Read-Write Lock
+- Java Monitor hat Fairness Problem
+	- Starvation-anfällig, vor allem bei vielen Threads
+
+4.16 Was muss bei Priority Inversion geachtet wernde?
+Es ist starvation möglich, da die Höherpriorisierten Threads vorrang haben. Wenn dieser jedoch auf ein andere warten muss -> Starvation
+
+4.17 Was ist am folgenden Beispiel falsch, wie kann das Problem gelöst werden?
+```java
+void acquireMultiLocks(Lock[] lockSet) {
+	int i= 0;
+	while (i < lockSet.length) {
+		if (lockSet[i].tryLock()) { //tryLock: true, falls Sperre erhalten - false, falls von anderem gesperrt
+			i++;
+		} else {
+			while (i> 0) {
+				i--;
+				lockSet[i].unlock();
+			}
+		}
+	}
+}
+```
