@@ -190,7 +190,7 @@ private int balance= 0;
 	}
 }
 ```
-Thread 1 | Balance | Tgread 2
+Thread 1 | Balance | Thread 2
 --------------- | --------------- | ---------------
 read balance => reg(reg== 0) | 0 |
 | 0 | read balance => reg(reg== 0)
@@ -221,10 +221,11 @@ class BankAccount{
 }
 ```
 Schlaufe und Zuweisung ist nicht atormar
+
 Thread 1 | locked | Thread 2
 --------------- | --------------- | ---------------
 Read locked in loop(locked== false) | false | Read locked in loop(locked == false)
-Write locked= true | true | Write locked= true
+Write locked= true | true | Write locked = true
 Critical section | - | Critical section
 
 2.5 Gegeben sein eine Klasse mit n Sychronisierten Methoden. Ist es möglich das zwei Methoden N der gleichen Instanz gleichzeitig ausgeführt werden?
