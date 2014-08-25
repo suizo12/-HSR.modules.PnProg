@@ -399,6 +399,7 @@ public class Turnstile {
 }
 ```
 Ja es bruacht die wait()-Schlaufe:
+
 Thread | Method -> Status | Waiting
 --------------- | --------------- | ---------------
 T1 | pass() -> wait() | T1 
@@ -456,6 +457,7 @@ Schritt 2 Synchronized ersetzten
 ![Semaphor](https://github.com/suizo12/-HSR.modules.PnProg/blob/master/images/semaphor2.png)
 
 3.5 Wie wird notify(), wait(), while um wait() und synchonized mit semaphoren ersetzt?
+
 Monitor | Semaphor
 --------------- | ---------------
 notifyAll() | release(), gibt Resource frei, benarchritig Wartende.
@@ -509,6 +511,7 @@ class BoundedBuffer<T> {
 ```
 
 3.10 Welche Read - Write zugriffe können parallel geschene?
+
 Parallel | Read | Write
 --------------- | --------------- | ---------------
 Read | Ja | Nein
@@ -668,6 +671,7 @@ Bei Confinement muss geschaut werden, dass die die Inneren Objecten nicht:
 
 	
 4.5 Welche Java Collection sind Thread save?
+
 Version | Beispiel | Threadsicher
 --------------- | --------------- | ---------------
 AlteJava 1.0 Collections | Vector,Stack, Hashtable | JA
