@@ -1527,7 +1527,7 @@ Anderer Thread schreibt unbemerkt dazwischen
 class LazyCreation{
 	private volatile LargeObject instance;
 	
-	public LargeObjectget() {
+	public LargeObject get() {
 		if (instance== null) {
 			synchronized (this) {
 				if (instance == null) {
@@ -1548,8 +1548,53 @@ Sync -> waiting | Instance = some value | Sync -> ok
  |  | Return instance
 Enter sync block |  | 
 
-Weil der Konstruktor vor dem instance = x aufgerufen werden kann (vom Compiler) -> Daher Race Condition -> wenn 
->T1
->Instance = x
->Constructor
-Dann kann sein, dass das Object noch nicht richtig generiert wurde,  jedoch instance = x wurde scho geschrieben und d.h. würde ein T2 instance == null false geben.
+Weil der Konstruktor vor dem instance = x aufgerufen werden kann (vom Compiler) 
+-> Data Race Condition 
+-> wenn T1 -> Instance = x
+
+Theoretisch möglich, dass das Object noch nicht richtig instanziert wurde, jedoch wurde zwischenzeitlich die Instance = x scho geschrieben 
+Dies würde für T2 instance == null false ergeben.
+
+##GPU Parallelisierung
+
+9.1 Erkläre die Begriffe Streaming Multiprocessor und Streaming Processor
+SM (Streaming Multiprocessors ) sind ein Sammeltopf von SP (Streaming Processor), die SM sind so etwas wie der CPU.
+Die SM müssen alle die gleiche Instruktion auf verschiedenen Daten ausführt. (SIMD Single Instruction Multiple Data)
+
+9.2 Welche Programme können damit effizient parallelisiert werden? Bzw. welche nicht?
+Welche die gleiche Operation auf verschiedenen Daten ausführen müssen. Games
+
+9.3 GPU vs. CPU
+
+GPU | CPU
+--------------- | ---------------
+GPU: Video Gaming | CPU: General Purpose
+Sehr hohe FLOPs | Niedrige Datenparallelität, viel Verzweigungen
+Extrem hohe Datenparallelität | Concurrency mit Synchronisation
+Hohe Memory Bandbreite | Wenige, aber mächtige Cores
+Einfache, aber viele Cores | Grössere Caches in Chip
+Kleine Caches pro Core | 
+*Ziel: Hoher Gesamtdurchsatz* | *Ziel: Niedrige Latenz pro Thread*
+
+9.4 Bei einer Vektoradition, welches ist die Optimalste Lösung? Von welchen Kriterien hängt das ab?
+![Adition Vektor](https://github.com/suizo12/-HSR.modules.PnProg/blob/master/images/gpu1.png)
+![Adition Vektor](https://github.com/suizo12/-HSR.modules.PnProg/blob/master/images/gpu2.png)
+Kriterien sind:
+- Maximale Anzahl Threads per Block
+	- Abhängig von GPU, z.B. 512 oder 1024
+- Blockgrösse als Vielfaches von 32
+	- Sonst sehr ineffizient
+- Überflüssige Threads vermeiden
+	- 2 Blöcke à 1024 => 548 unnütze Threads
+- Streaming Multiprocessorausschöpfen
+	- Limitefür Resident Blöcke und Threads, z.B. 8 und 1536
+- Grosse Blockgrösse hat Vorteile
+	- Threads können nur in Block interagieren
+
+9.5 Welches ist die optimale Konfiguration?
+Gegeben sei:
+Vektor Länge  1500
+Maximale Anzahl Threads per Block = 512
+Maximale Anzahl Resident Blocks = 8
+Maximale Anzahl Resident Threads = 1536
+![Adition Vektor](https://github.com/suizo12/-HSR.modules.PnProg/blob/master/images/g3.png)
