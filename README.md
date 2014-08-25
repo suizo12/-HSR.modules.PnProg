@@ -534,7 +534,7 @@ Semaphore startAllows = new Semaphore(0);
 //N Cars:							RaceControl:
 readyCars.release(); 	---------> 	readyCars.acquire(N);
 startAllows.acquire();		<---------	startAllows.release(N);
-``
+```
 ```java
 CountDownLatch carsReady = new CountDownLatch(N);
 CountDownLatch startSignal = new CountDownLatch(1);
@@ -542,7 +542,7 @@ CountDownLatch startSignal = new CountDownLatch(1);
 //N Cars:							RaceControl:
 carsReady.countDown(); 	---------> 	startSignal.await();
 carsReady.await();		<---------	startSignal.countDown();
-``
+```
 
 3.15 Zeichne ein Beispiel der CountDown Latch auf.
 ![Count Down Latch](https://github.com/suizo12/-HSR.modules.PnProg/blob/master/images/ctl.png)
@@ -618,13 +618,13 @@ Thread-0 got 4
 Thread-1 got 4
 
 3.22 Was ist der Unterschied zwischen Java Monitor vs Lock & Condition?
- | Java Monitor | Lock & Condition
+- | Java Monitor | Lock & Condition
 ------------ | ------------ | -------------
 Inneren Warteraum | 1 | Mehrere
 Implementierung | API | In java integriert
 
 3.23 Was ist der Unterschied zwischen Semaphore vs CountDownLatch?
- | Semaphore | CountDownLatch
+- | Semaphore | CountDownLatch
 ------------ | ------------ | -------------
 Blocking Counter(N) bei | Wenn alle N vergeben sind (N = 0) | Solange N noch verfügbar sind (N > 0)
 Counter Eigenschaft | Kann erhöht werden | Kann nicht erhöht werden
