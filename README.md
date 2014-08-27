@@ -56,7 +56,7 @@ myThread.start();
 class SimpleThread extends Thread {
 	private String label;
 	private intnofIt;
-	publicSimpleThread(String label, intnofIt) {
+	public SimpleThread(String label, int nofIt) {
 		this.label= label; 
 		this.nofIt= nofIt;
 	}
@@ -80,16 +80,16 @@ Es wird "A 1"…"A 10" und "B 1" … "B 10" ausgegeben die Reihenfolge ist nicht
 
 1.7 Was passiert wenn anstatt start() run() aufgerufen wird?
 Deterministischer Aufruf:
->main finished
->A1 
->A2
->A3
->…
->A10
->B1
->B2
->…
->B10
+- main finished
+- A1 
+- A2
+- A3
+- …
+- A10
+- B1
+- B2
+- …
+- B10
 
 1.8 Stimmt die folgende Aussage: "Treads in einer JVM laufen immer Deterministisch"
 Meistens, jedoch nicht immer, Threads laufen ohne Vorkehrungen beliebig verzahnt oder parallel. Viele JVMs realisieren einzelne System Outputs ohne Verzahnung/Thread-Fehler -aber es ist nicht spezifiziert!
@@ -119,13 +119,13 @@ Meistens, jedoch nicht immer, Threads laufen ohne Vorkehrungen beliebig verzahnt
 ```
 
 1.10 Für was wird Thread.yield() hauptzächlich verwendet? 
-Thread.yield() wird für das Testen verwendet.
+- Thread.yield() wird für das Testen verwendet.
 
 1.11 Was passiert mit dem Thread wenn Thread.sleep(2000) aufgerufen wird?
-Thread geht in den Wartezustand für 2sec. Anschliessend ist er wieder Ready.
+- Thread geht in den Wartezustand für 2sec. Anschliessend ist er wieder Ready.
 
 1.12 Welche Exception wirft Thread.sleep(miliseconds)?
-InterruptedException
+- InterruptedException
 
 1.13 Wie sieht ein Thread Lifecycle aus?
 ![Thread Lifecycle](https://github.com/suizo12/-HSR.modules.PnProg/blob/master/images/thread_lifecycle.png)
