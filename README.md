@@ -319,11 +319,11 @@ class BankAccount {
 - notifyAll()weckt alle im Monitor wartende Threads auf
 - Kein Effekt, falls kein Thread wartet
 
-2.13 Warum muss ein eine Schlaufe um die wait() Methode sein? 
+2.13 Warum muss ein eine Schlaufe um die wait() Methode sein (Vorlesung 2 Folie 36)? 
 ```java
 while ( Bedinung ) { wait(); }
 ```
-Weil die Bedingung nicht zwingen erfüllt sein muss.
+Weil die Bedingung nicht zwingen erfüllt sein muss, wenn er von einem anderen Thread aufgeweckt wird.
 
 2.14 Was ist Speziell an den Methoden wait(), notify() und notifyAll()?
 Sie dürfen nur in einem Synchronized Kontext verwendet werden. Ansonsten IllegalMonitorStateException. 
@@ -466,9 +466,9 @@ while um wait() | acquire(), Wartet wenn keine Ressource verfügbar ist.
 synchronized | Binare Semaphore: Anstatt synchronized wird der Kritischer Block mit binarSemaphore.acquire(); ... binarSemaphore.release(); umgeben.
 
 3.6 Wie wird mit "Lock & Conditions" den Monitor umgesetzt?
--Lock-Objekt: Sperre für Eintritt in Monitor
+- Lock-Objekt: Sperre für Eintritt in Monitor
 	- Äussere Warteliste
-- Condition-Objekt: Wait& Signal für bestimmte Bedingung
+- Condition-Objekt: Wait & Signal für bestimmte Bedingung
 	- Innere Warteliste
 
 3.7 Zeichne die UML Struktur des Lock & Condition"
@@ -520,7 +520,7 @@ Write | Nein | Nein
 3.11 Bei Read-Write Lock & Condition hat nur der Write-Lock Conditions (3 Woche Folie 27) Warum ist das so?
 ![Read-Write lock](https://github.com/suizo12/-HSR.modules.PnProg/blob/master/images/wr_condition.png)
 
-3.12 Was sind Synchronisationspunkte? Gebe drei Beispiele dazu.
+3.12 Was sind Synchronisationspunkte? Gebe drei Beispiele dazu. (Vorlesung 3 Seite 31/32)\n
 Synchronasionspunkte ist ein Ort wo etwas (Thread) auf den rest (andere Threads) wartet (synchronisiert).
 Beispiele:
 - Thread.join()
@@ -553,12 +553,12 @@ carsReady.await();		<	-	-	-	--	startSignal.countDown();
 ![Count Down Latch](https://github.com/suizo12/-HSR.modules.PnProg/blob/master/images/ctl.png)
 
 3.16 Wie funktioniert das Barriere prinzip.
--Anzahl Teilnehmer bei Konstruktorfestlegen
+- Anzahl Teilnehmer bei Konstruktorfestlegen
 	-Nicht mehr änderbar
-	-intgetParties()
--Passieren bei Barriere
-	-int await()
-	-Rückgabe: Anzahl noch fehlender Threads bei Barriere
+	- int getParties()
+- Passieren bei Barriere
+	- int await()
+	- Rückgabe: Anzahl noch fehlender Threads bei Barriere
 	-- > 0: Warten
 	-- == 0: Barriere öffnen und Wartende aufwecken
 - «BrokenBarrier»
@@ -610,17 +610,17 @@ for (int k = 0; k < 2; k++) {
 ```
 
 3.21 Welche ausgabe wird bei 3.20 ausgegeben.
-Ausgabe:
-Thread-0 got 0
-Thread-1 got 0
-Thread-0 got 1
-Thread-1 got 1
-Thread-0 got 2
-Thread-1 got 2
-Thread-1 got 3
-Thread-0 got 3
-Thread-0 got 4
-Thread-1 got 4
+- Ausgabe:
+- Thread-0 got 0
+- Thread-1 got 0
+- Thread-0 got 1
+- Thread-1 got 1
+- Thread-0 got 2
+- Thread-1 got 2
+- Thread-1 got 3
+- Thread-0 got 3
+- Thread-0 got 4
+- Thread-1 got 4
 
 3.22 Was ist der Unterschied zwischen Java Monitor vs Lock & Condition?
 - | Java Monitor | Lock & Condition
