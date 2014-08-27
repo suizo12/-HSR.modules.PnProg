@@ -814,7 +814,7 @@ void acquireMultiLocks(Lock[] lockSet) {
 2. Die Bedingungen können nur von Tasks erfüllt werden, die in der Warteschlange stecken
 
 5.5 Wiso kann der Worker Thread nicht andere Tasks ausführen, wenn ein Task blockiert?
-Weil sonst ein neuer Task aufgerufen werden müsste.
+- Weil sonst ein neuer Task aufgerufen werden müsste.
 
 5.6 Beispiel für Task Implementierung & Ausführung
 ```java
@@ -892,7 +892,7 @@ Bei Fire and Forgot muss geachtet werden, dass wenn im Task eine Exception gewor
 
 5.11 Folgendes Beispiel  implementiert eine Suche als Task. Schreibe diese mit java8 um
 ```java
-class SearchTaskimplements Callable<Boolean>{
+class SearchTask implements Callable<Boolean>{
 	private List<String> words;
 	private String pattern;
 
@@ -941,10 +941,10 @@ Java8:
 
 ![Rekursive Tasks](https://github.com/suizo12/-HSR.modules.PnProg/blob/master/images/recursive_task1.png)
 ```java
-class MySuperTaskextends RecursiveTask<Integer>{
+class MySuperTask extends RecursiveTask<Integer>{
 	@Override
 	protected Integer compute(){
-		MySubTasksub= newMySubTask(…);
+		MySubTask sub= new MySubTask(…);
 		sub.fork(); //Startet Sub-Task
 		// other work
 		sub.join(); //Wartet auf Beendigung
@@ -987,7 +987,7 @@ class SearchTaskextends RecursiveTask<Boolean>{
 
 5.15 Was versteht man unter Work Stealing Thread Pool?
 ![Thread Stealing](https://github.com/suizo12/-HSR.modules.PnProg/blob/master/images/thread_stealing.png)
-Verteilte Queues für weniger Contention
+Verteilte Queues für weniger Contention (Wettbewerb)
 - Weniger Threads streiten um gleiche Locks
 	- Viel effizienter
 - FIFO
@@ -1004,7 +1004,7 @@ Wegen Priorisierung von Neuen Tasks
 5.17 Erkläre das Asychrone Aufruf Prinzip.
 ![Asynchrone](https://github.com/suizo12/-HSR.modules.PnProg/blob/master/images/async.png)
 ```java
-longresult= longOperation(); // Asynchroner Aufruf gewünscht, Aufrufer unnötig blockiert
+long result= long Operation(); // Asynchroner Aufruf gewünscht, Aufrufer unnötig blockiert
 otherWork();
 process(result);
 ```
@@ -1027,7 +1027,7 @@ interface CallbackHandler<T> {
 }
 
 class MyMath{
-	ExecutorServicethreadPool= …;
+	ExecutorService threadPool= …;
 	
 	void asyncLongOperation(long input, CallbackHandler<Long> callback) { //CallbackHandler<Long> as Parameter mitgeben.
 		threadPool.submit(() -> {
@@ -1047,11 +1047,11 @@ Synchronisation ist eventuell nötig zwischen Caller und Worker Thread.
 5.20 Wie wird diser Callback mit Synchronisation implementiert?
 ```java
 class Calculator {
-	private booleanisRunning= false;
+	private boolean isRunning= false;
 	
 	public synchronized void test() {
 		if (!isRunning) { //Mehrfachausführung z.B. ignorieren
-			isRunning= true;
+			isRunning = true;
 			MyMath.asyncLongOperation(N, (result) -> {
 				show(result);
 				synchronized(this) {
@@ -1066,8 +1066,8 @@ class Calculator {
 
 5.21 Wann braucht es Synchronisation beim Callback?
 ![Callback Synchronisation](https://github.com/suizo12/-HSR.modules.PnProg/blob/master/images/callback_sync.png)
-Wenn das Resultat in Zukunft gebraucht wird. 
-Wenn der Rote Thread einen Callback macht und dieser mit dem Laufendem Thread synchronisiert wird.
+- Wenn das Resultat in Zukunft gebraucht wird. 
+- Wenn der Rote Thread einen Callback macht und dieser mit dem Laufendem Thread synchronisiert wird.
 
 ## .NET
 
@@ -1092,15 +1092,14 @@ Collection theadsave? | siehe 4.5 | Nein, ausser
 ![.Net Monitor](https://github.com/suizo12/-HSR.modules.PnProg/blob/master/images/.netmonitor.png)
 
 6.3 In Java wurde immer this (best practice) gelockt, in .Net (best praktce) wird ein Hilfsobject verwendet (syncObject) um die Synchronisation zu garantieren. Was sind dabei die Vorteile?
-Vorteile: Mehrere verschiedene Locks innerhalb einer Klasse
-Es wird verhindert, dass jemand BankAccount von aussen locken kann.
-Nachteile: Es kann nicht von aussen gelockt werden.
+- Vorteile: Mehrere verschiedene Locks innerhalb einer Klasse. Es wird verhindert, dass jemand BankAccount von aussen locken kann.
+- Nachteile: Es kann nicht von aussen gelockt werden.
 
 6.4 Was ist hier falsch?
 ```c#
-for(inti = 0; i < 100; i++) {
+for(int i = 0; i < 100; i++) {
 	Task.Factory.StartNew(() => {
-		// usei asinput
+		// use i as input
 		Console.WriteLine("Working with" + i);
 	});
 }
@@ -1120,6 +1119,7 @@ Kommt darauf an. Task wird evtl. nicht oder unvollständig ausgeführt, da der T
 
 6.6 Wie lässt sich folgender Code korrigieren?
 ![.Net Race](https://github.com/suizo12/-HSR.modules.PnProg/blob/master/images/.netrace.png)
+- Lösung
 ```c#
 long totalWords= 0;
 Parallel.ForEach<FileInfo>(files, (f) => {
@@ -1259,11 +1259,11 @@ public static void main(String args[]) {
 ```
 pack()& setVisible()im Event DispatchThread ausführen
 
-7.7 Was ist am folgendem Code falsch? wie kann dies Korrigiert wernde?
+7.7 Was ist am folgendem Code falsch? Wie kann dies Korrigiert wernde?
 ```c#
-public async Task<bool> IsPrimeAsync(longnumber) {
-	for(longi = 2; i <= Math.Sqrt(number); i++) {
-		if(number% i == 0) { returnfalse; }
+public async Task<bool> IsPrimeAsync(long number) {
+	for(long i = 2; i <= Math.Sqrt(number); i++) {
+		if(number % i == 0) { return false; }
 	}
 	return true;
 }
@@ -1317,6 +1317,7 @@ async void startDownload_Click(…) {
 
 ##Memory Models
 8.1 Was sind die möglichen Werte für i und j?
+
 ![Memory Models](https://github.com/suizo12/-HSR.modules.PnProg/blob/master/images/m1.png)
 
 j | i
@@ -1352,20 +1353,22 @@ denn der Code kann ungeordnert werden (performance optimierung.)
 		- longund double dann auch atomar
 		
 8.5 Welche Anweisungen sind atomar?
-1.longl = -1;
-2.double d = 3.14;
-3.inti = 1;
-4.String s = "first";
-5.booleanb = true;
+
+1. longl = -1;
+2. double d = 3.14;
+3. inti = 1;
+4. String s = "first";
+5. booleanb = true;
 ...
-6.i = (int)l;
-7.l = 42;
-8.i = 7;
-9.++i;
-10.s = "second";
-11.d = d * i;
-12.s = null;
-13.b = false;
+6. i = (int)l;
+7. l = 42;
+8. i = 7;
+9. ++i;
+10. s = "second";
+11. d = d * i;
+12. s = null;
+13. b = false;
+
 ![Atomicity](https://github.com/suizo12/-HSR.modules.PnProg/blob/master/images/m3.png)
 
 8.6 Was ist das Problem hier?
@@ -1409,7 +1412,9 @@ void run() {
 	- Ebenso Task Start und Ende
 	
 8.8 Wo ist die Sichtbarkeit von x==1 garantiert?
+
 ![Visibility](https://github.com/suizo12/-HSR.modules.PnProg/blob/master/images/m4.png)
+
 1. Garantiert
 2. Nicht Garantiert
 3. Garantiert (Ausser wenn x während des Constructors gelesen wird.)
@@ -1498,7 +1503,9 @@ class Worker extends Thread {
 	- Memory Barriers/ Memory Fences
 
 8.10 Welche Umordnungensind möglich?
+
 ![Ordering](https://github.com/suizo12/-HSR.modules.PnProg/blob/master/images/m5.png)
+
 1. Ja
 2. Nein
 3. Nein
