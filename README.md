@@ -520,7 +520,7 @@ Write | Nein | Nein
 3.11 Bei Read-Write Lock & Condition hat nur der Write-Lock Conditions (3 Woche Folie 27) Warum ist das so?
 ![Read-Write lock](https://github.com/suizo12/-HSR.modules.PnProg/blob/master/images/wr_condition.png)
 
-3.12 Was sind Synchronisationspunkte? Gebe drei Beispiele dazu. (Vorlesung 3 Seite 31/32)\n
+3.12 Was sind Synchronisationspunkte? Gebe drei Beispiele dazu. (Vorlesung 3 Seite 31/32)
 Synchronasionspunkte ist ein Ort wo etwas (Thread) auf den rest (andere Threads) wartet (synchronisiert).
 Beispiele:
 - Thread.join()
@@ -554,7 +554,7 @@ carsReady.await();		<	-	-	-	--	startSignal.countDown();
 
 3.16 Wie funktioniert das Barriere prinzip.
 - Anzahl Teilnehmer bei Konstruktorfestlegen
-	-Nicht mehr änderbar
+	- Nicht mehr änderbar
 	- int getParties()
 - Passieren bei Barriere
 	- int await()
@@ -753,7 +753,7 @@ to.deposit(amount); <- Implizit geschachtelter Lock
 - Zyklische Warteabhängigkeiten
 - Sperren ohne Timeout/Abbruch
 
-4.13 Wie können deadlocks verhindert werden?
+4.13 Wie können deadlocks verhindert werden? (Philosoph Übung)
 - Lineare Ordnung der Ressourcen einführen
 	- Nur geschachtelt in aufsteigender Reihenfolge sperren
 ![Deadlock verhindern](https://github.com/suizo12/-HSR.modules.PnProg/blob/master/images/dlock2.png)
@@ -775,7 +775,7 @@ to.deposit(amount); <- Implizit geschachtelter Lock
 	- Starvation-anfällig, vor allem bei vielen Threads
 
 4.16 Was muss bei Priority Inversion geachtet wernde?
-Es ist starvation möglich, da die Höherpriorisierten Threads vorrang haben. Wenn dieser jedoch auf ein andere warten muss -> Starvation
+- Es ist starvation möglich, da die Höherpriorisierten Threads vorrang haben. Wenn dieser jedoch auf ein andere warten muss -> Starvation
 
 4.17 Was ist am folgenden Beispiel falsch, wie kann das Problem gelöst werden?
 ```java
@@ -796,8 +796,8 @@ void acquireMultiLocks(Lock[] lockSet) {
 
 ## Thread Pools & Asynchrone Programmierung
 5.1 Erkläre das Thread Pool Prinzip.
-Thread Pool ist ein Topf mit einer beschränkter Anzhal Threads.
-Task implementieren potentiele Arbeitspakete, welche als Queue warten bis ein Thread im Pool diese Abarbeitet.
+- Thread Pool ist ein Topf mit einer beschränkter Anzhal Threads.
+- Task implementieren potentiele Arbeitspakete, welche als Queue warten bis ein Thread im Pool diese Abarbeitet.
 
 5.2 Was sind die Vorteile von Thread Pool?
 - Beschränkte Anzahl von Threads
@@ -806,9 +806,10 @@ Task implementieren potentiele Arbeitspakete, welche als Queue warten bis ein Th
 - Anzahl Threads individuell pro System konfigurierbar
 
 5.3 Was muss bei den Tasks beachtet werden?
-Task sollten nicht voneinander abhängig sein, denn wenn alle Worker Threads mit wartende Task beschäftigt sind entsteht ein Dead lock.
+- Task sollten nicht voneinander abhängig sein, denn wenn alle Worker Threads mit wartende Task beschäftigt sind entsteht ein Dead lock.
 
 5.4 Was für zwei Szenarien gibt es bei Thread Pool, die zu einem Deadlock führen können?
+
 1. Alle Worker-Threads sind mit Tasks beschäftigt, die auf eine Bedinung warten.
 2. Die Bedingungen können nur von Tasks erfüllt werden, die in der Warteschlange stecken
 
