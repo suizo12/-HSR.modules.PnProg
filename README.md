@@ -212,7 +212,7 @@ public void deposit(intamount) {
 ```java
 class BankAccount{
 	private int balance= 0;
-	private bool eanlocked= false;
+	private boolean locked= false;
 	public void deposit(int amount) {
 		while(locked) { } // busy waiting loop locked= true; 
 		this.balance+= amount;// enter critical section
@@ -319,7 +319,7 @@ class BankAccount {
 - notifyAll()weckt alle im Monitor wartende Threads auf
 - Kein Effekt, falls kein Thread wartet
 
-2.13 Warum muss ein eine Schlaufe um die wait() Methode sein (Vorlesung 2 Folie 36)? 
+2.13 Warum muss eine Schlaufe um die wait() Methode sein (Vorlesung 2 Folie 36)? 
 ```java
 while ( Bedinung ) { wait(); }
 ```
@@ -460,12 +460,12 @@ Schritt 2 Synchronized ersetzten
 
 Monitor | Semaphor
 --------------- | ---------------
-notifyAll() | release(), gibt Resource frei, benarchritig Wartende.
-wait() | acquire(), Bezieht freie Ressource.
+notifyAll() | release(N), gibt N Resourcen frei, benarchritig N Wartende.
+wait() | acquire() auf semaphore mit 0 Resourcen, Bezieht freie Ressource.
 while um wait() | acquire(), Wartet wenn keine Ressource verfügbar ist.
 synchronized | Binare Semaphore: Anstatt synchronized wird der Kritischer Block mit binarSemaphore.acquire(); ... binarSemaphore.release(); umgeben.
 
-3.6 Wie wird mit "Lock & Conditions" den Monitor umgesetzt?
+3.6 Wie wird mit "Lock & Conditions" den Monitor umgesetzt? Folie 22/23
 - Lock-Objekt: Sperre für Eintritt in Monitor
 	- Äussere Warteliste
 - Condition-Objekt: Wait & Signal für bestimmte Bedingung
@@ -1002,6 +1002,7 @@ Verteilte Queues für weniger Contention (Wettbewerb)
 Wegen Priorisierung von Neuen Tasks
 
 5.17 Erkläre das Asychrone Aufruf Prinzip.
+
 ![Asynchrone](https://github.com/suizo12/-HSR.modules.PnProg/blob/master/images/async.png)
 ```java
 long result= long Operation(); // Asynchroner Aufruf gewünscht, Aufrufer unnötig blockiert
@@ -1065,6 +1066,7 @@ class Calculator {
 ```
 
 5.21 Wann braucht es Synchronisation beim Callback?
+
 ![Callback Synchronisation](https://github.com/suizo12/-HSR.modules.PnProg/blob/master/images/callback_sync.png)
 - Wenn das Resultat in Zukunft gebraucht wird. 
 - Wenn der Rote Thread einen Callback macht und dieser mit dem Laufendem Thread synchronisiert wird.
@@ -1280,7 +1282,7 @@ public async Task<bool> IsPrimeAsync(long number) {
 }
 ```
 
-7.8 Was ist die Ausgabe des folgenden Code, ewnn kein UI / Synchronisationskontext mit Dispatcher vorhanden ist?
+7.8 Was ist die Ausgabe des folgenden Code, wenn kein UI / Synchronisationskontext mit Dispatcher vorhanden ist?
 ```c#
 public async Task DownloadAsync() {
 	Console.WriteLine("BEFORE "+ Thread.CurrentThread.ManagedThreadId);
@@ -2178,7 +2180,7 @@ public class FastLockFreeStack<T> implements Stack<T> {
 		}
 	}
 }
-``
+```
 
 ####11.1
 ```java
@@ -2560,6 +2562,42 @@ class MaxSearchTask extends RecursiveTask<Integer> {
 			max = Math.max(array[k], max);
 		}
 		return max;
+	}
+}
+```
+
+####Count Down mit Semaphor
+```java
+public class CountDownLatch {
+	private Semaphore signal = new Semaphore(0);
+	private Semaphore mutex = new Semaphore(1, true);
+	private int count;
+	private int waiting = 0;
+
+	public CountDownLatch(int initialCount) {
+		count = initialCount;
+	}
+
+	public void await() throws InterruptedException {
+		mutex.acquire();
+		if (count > 0) {
+			waiting++;
+			mutex.release();
+			signal.acquire();
+		} else {
+			mutex.release();
+		}
+	}
+
+	public void countDown() throws InterruptedException {
+		mutex.acquire();
+		if (count > 0) {
+			count--;
+			if (count == 0) {
+				signal.release(waiting);
+			}
+		}
+		mutex.release();
 	}
 }
 ```
