@@ -944,7 +944,7 @@ Java8:
 class MySuperTask extends RecursiveTask<Integer>{
 	@Override
 	protected Integer compute(){
-		MySubTask sub= new MySubTask(…);
+		MySuberTask sub = new MySuberTask(…);
 		sub.fork(); //Startet Sub-Task
 		// other work
 		sub.join(); //Wartet auf Beendigung
@@ -953,7 +953,7 @@ class MySuperTask extends RecursiveTask<Integer>{
 }
 
 //Spezielle Thread-Pool für rekursive Tasks (Deamon Thread)
-ForkJoinPoolthreadPool= new ForkJoinPool();
+ForkJoinPool threadPool= new ForkJoinPool();
 …
 //Führe Haupt-Task asu (wartet auf Beendigung)
 threadPool.invoke(newMySuperTask());
@@ -1606,3 +1606,901 @@ Maximale Anzahl Threads per Block = 512
 Maximale Anzahl Resident Blocks = 8
 Maximale Anzahl Resident Threads = 1536
 ![Adition Vektor](https://github.com/suizo12/-HSR.modules.PnProg/blob/master/images/g3.png)
+
+# Übungen
+####2.2.b BankAccount withDraw mit Timeout
+Unterstützten Sie für das Abheben einen Timeout. Die Methode withdraw() soll maximal die spezifizierte Zeit (Millisekunden) warten, bis dass das Konto mindestens den Kontostand hat, um den Betrag ohne Negativsaldo abheben zu können. Wenn das Abheben gelingt, wird true zurückgegeben; sonst bei Timeout false.
+```java
+// returns true if successful, false if failed after timeout.
+public synchronized boolean withdraw(int amount, long timeOutMillis)
+```
+```java
+// returns true if successful, false if failed after timeout.
+public synchronized boolean withdraw(int amount, long timeOutMillis) {
+	if (timeOutMillis < 0) {
+		throw new IllegalArgumentException("timeOutMillis is negative");
+	}
+	long startTime = System.currentTimeMillis();
+	long currentTime = startTime;
+	while (amount > balance && currentTime - startTime < timeOutMillis) {
+		try {
+			// wait timeout period must be positive: therefore fix
+			// currentTime in temporary variable
+			wait(timeOutMillis - currentTime + startTime);
+		} catch (InterruptedException e) {
+		}
+		currentTime = System.currentTimeMillis();
+	}
+	if (amount <= balance) {
+		balance -= amount;
+		return true;
+	} else {
+		return false;
+	}
+}
+```
+
+
+####2.3 Producer - Consumer Bounded Buffer
+Beim Producer-Consumer Szenario gibt es eine Anzahl Producer-Threads und eine Anzahl Consumer-Threads, die mit einem gemeinsamen Buffer interagieren. Die Producer-Threads fügen wiederholt Werte in den Buffer ein, während die Consumer-Threads wiederholt Werte aus dem Buffer herausnehmen.
+Der Buffer hat eine beschränkte Kapazität, d.h. das Einfügen put() blockiert so lange, wie der Buffer voll ist. Umgekehrt blockiert das Entnehmen get() so lange, wie der Buffer leer ist.
+![Aufgabe1](https://github.com/suizo12/-HSR.modules.PnProg/blob/master/images/u2.png)
+##### Bounded Buffer als Monitor
+```java
+class BoundedBuffer<T> {
+	private final Queue<T> queue = new LinkedList<T>();
+	private final int capacity;
+
+	public BoundedBuffer(int capacity) {
+		this.capacity = capacity;
+	}
+
+	public synchronized void put(T item) throws InterruptedException {
+		while (queue.size() == capacity) {
+			wait();
+		}
+		queue.add(item);
+		notifyAll();
+	}
+
+	public synchronized T get() throws InterruptedException {
+		while (queue.size() == 0) {
+			wait();
+		}
+		T item = queue.remove();
+		notifyAll();
+		return item;
+	}
+}
+```
+####4.3 Upgradable ReadWriteLook
+![Aufgabe1](https://github.com/suizo12/-HSR.modules.PnProg/blob/master/images/u4.png)
+
+Wieso soll der Upgrade-Wunsch bereits beim Read Lock speziell mit upgradeableReadLock() bekannt gegeben werden?
+	- Angenommen man würde den Upgrade während den Reads ohne weiteres erlauben, könnte es Deadlocks geben. Dies dann, wenn beispielsweise zwei Threads den Read Lock gleichzeitig besitzen und beide dann zu Write erhöhen wollen: Jeder hindert den anderen am Upgrade, weil er selbst schon ein Read Lock hat und den nicht mehr ohne Upgrade freigeben will. Deadlock Szenario (falls gleichzeitige Upgradeable Reads erlaubt wären)
+Thread 1 | Thread 2
+------------ | ------------
+Read Lock |                        
+- | Read Lock
+Upgrade zu Write gewünscht | 
+=> blockiert | 
+ | Upgrade zu Write gewünscht
+ | => blockiert
+
+```java
+package u04.a03;
+//Speziell an der Lösung ist, dass ein Read Lock nur dann zu einem Write Lock erhöht werden kann, wenn dies bereits beim Read Lock bekannt gegeben wird (upgradeableReadLock() statt nur readLock()).
+public class UpgradeableReadWriteLock {
+	int readCount;
+	boolean writeLock;
+	Thread upgradeableThread;
+	boolean upgraded;
+
+	public synchronized void readLock() throws InterruptedException {
+		while (writeLock)
+			wait();
+		readCount++;
+	}
+
+	public synchronized void readUnlock() {
+		readCount--;
+		notifyAll();
+	}
+
+	public synchronized void upgradeableReadLock() throws InterruptedException {
+		while (writeLock || upgradeableThread != null)
+			wait();
+		readCount++;
+		upgradeableThread = Thread.currentThread();
+	}
+
+	public synchronized void upgradeableReadUnlock() {
+		if(upgraded) {
+			writeLock = false;
+			upgraded = false;
+		}
+		upgradeableThread = null;
+		readCount--;	
+		notifyAll();
+	}
+
+	public synchronized void writeLock() throws InterruptedException {
+		while (writeLock || readCount > 1 || (readCount == 1 && upgradeableThread != Thread.currentThread()))
+			wait();
+		writeLock = true;
+		if(upgradeableThread == Thread.currentThread()) {
+			upgraded = true;
+		}
+	}
+
+	public synchronized void writeUnlock() {
+		if(upgraded)
+			upgraded = false;
+		writeLock = false;
+		notifyAll();
+	}
+}
+```
+
+####5.1 Quicksort
+##### Sequenziell
+```java
+// sorts the entire integer array in ascending order
+void sort(int[] array) {
+	quickSort(array, 0, array.length - 1);
+}
+
+// sorts the partition between array[left] and array[right]
+void quickSort(int[] array, int left, int right) {
+	int i = left, j = right;
+	long m = array[(left + right) / 2];
+	do {
+		while (array[i] < m) {
+			i++;
+		}
+		while (array[j] > m) {
+			j--;
+		}
+		if (i <= j) {
+			int t = array[i];
+			array[i] = array[j];
+			array[j] = t;
+			i++;
+			j--;
+		}
+	} while (i <= j);
+	if (j > left) {
+		quickSort(array, left, j);
+	}
+	if (i < right) {
+		quickSort(array, i, right);
+	}
+}
+```
+##### Parallel
+```java
+package aufgabe1;
+
+import java.util.Random;
+import java.util.concurrent.ForkJoinPool;
+import java.util.concurrent.RecursiveAction;
+
+class QuickSortTask extends RecursiveAction {
+	private static final long serialVersionUID = 1L;
+	private static final int THRESHOLD = 100000;
+
+	private int[] array;
+	private int left, right;
+
+	public QuickSortTask(int[] array, int left, int right) {
+		this.array = array;
+		this.left = left;
+		this.right = right;
+	}
+
+	// sorts the partition between array[l] and array[r]
+	private void quickSort(int l, int r) {
+		int i = l, j = r;
+		long m = array[(l + r) / 2];
+		do {
+			while (array[i] < m) {
+				i++;
+			}
+			while (array[j] > m) {
+				j--;
+			}
+			if (i <= j) {
+				int t = array[i];
+				array[i] = array[j];
+				array[j] = t;
+				i++;
+				j--;
+			}
+		} while (i <= j);
+		if (j - l > THRESHOLD && r - i > THRESHOLD) {
+			invokeAll(
+					new QuickSortTask(array, l, j), 
+					new QuickSortTask(array, i, r)
+					);
+		} else {
+			if (j > l) {
+				quickSort(l, j);
+			}
+			if (i < r) {
+				quickSort(i, r);
+			}
+		}
+	}
+
+	protected void compute() {
+		quickSort(left, right);
+	}
+}
+
+public class QuickSortSample {
+	private static final int NOF_ELEMENTS = 10_000_000;
+
+	private static int[] createRandomArray(int length) {
+		Random random = new Random(4711);
+		int[] numberArray = new int[length];
+		for (int i = 0; i < length; i++) {
+			numberArray[i] = random.nextInt();
+		}
+		return numberArray;
+	}
+
+	private static void checkSorted(int[] numberArray) {
+		for (int i = 0; i < numberArray.length - 1; i++) {
+			if (numberArray[i] > numberArray[i + 1]) {
+				throw new RuntimeException("Not sorted");
+			}
+		}
+	}
+
+	public static void main(String[] args) {
+		int[] numberArray = createRandomArray(NOF_ELEMENTS);
+		long startTime = System.currentTimeMillis();
+		ForkJoinPool pool = new ForkJoinPool();
+		pool.invoke(new QuickSortTask(numberArray, 0, NOF_ELEMENTS - 1));
+		long stopTime = System.currentTimeMillis();
+		System.out.println("Total time: " + (stopTime - startTime) + " ms");
+		checkSorted(numberArray);
+	}
+}
+```
+
+####5.2 Download mit Future
+```java
+package aufgabe2a;
+
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.Reader;
+import java.net.URL;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+
+public class WebDownload {
+	ExecutorService threadPool = Executors.newCachedThreadPool();
+
+	public Future<String> asyncDownloadUrl(final String link) {
+		return threadPool.submit(new Callable<String>() {
+			@Override
+			public String call() {
+				try {
+					URL url = new URL(link);
+					StringBuffer stringBuffer = new StringBuffer();
+					try (Reader reader = new InputStreamReader(url.openStream())) {
+						int i;
+						while ((i = reader.read()) >= 0) {
+							stringBuffer.append((char) i);
+						}
+					}
+					return stringBuffer.toString();
+				} catch (IOException e) {
+					throw new RuntimeException(e);
+				}
+			}
+		});
+	}
+
+	public void shutdown() throws InterruptedException {
+		threadPool.shutdown();
+	}
+}
+```
+
+```java
+package aufgabe2a;
+
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
+
+public class TestDownload {
+	private static final String[] links = new String[] {
+			"http://www.google.com", 
+			"http://www.bing.com",
+			"http://www.yahoo.com", 
+			"http://www.microsoft.com",
+			"http://www.oracle.com" 
+		};
+
+	public static void main(String[] args) throws IOException,
+			InterruptedException, ExecutionException {
+		long startTime = System.currentTimeMillis();
+		WebDownload downloader = new WebDownload();
+		List<Future<String>> futures = new ArrayList<>();
+		for (int i = 0; i < links.length; i++) {
+			futures.add(downloader.asyncDownloadUrl(links[i]));
+		}
+		for (int i = 0; i < links.length; i++) {
+			String result = futures.get(i).get();
+			System.out.println(String.format("%s downloaded (%d characters)", links[i], result.length()));
+		}
+		downloader.shutdown();
+		long endTime = System.currentTimeMillis();
+		System.out.println(String.format("total time: %d ms", endTime - startTime));
+	}
+}
+```
+
+####5.2 Download mit Callback
+```java
+package aufgabe2b;
+
+public interface CompletionHandler<T> {
+	void completed(T result);
+}
+```
+
+```java
+package aufgabe2b;
+
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.Reader;
+import java.net.URL;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+
+public class WebDownload {
+	ExecutorService threadPool = Executors.newCachedThreadPool();
+
+	public void asyncDownloadUrl(final String link,
+			final CompletionHandler<String> handler) {
+		threadPool.submit(new Runnable() {
+			@Override
+			public void run() {
+				try {
+					URL url = new URL(link);
+					StringBuffer stringBuffer = new StringBuffer();
+					try (Reader reader = new InputStreamReader(url.openStream())) {
+						int i;
+						while ((i = reader.read()) >= 0) {
+							stringBuffer.append((char) i);
+						}
+					}
+					handler.completed(stringBuffer.toString());
+				} catch (IOException e) {
+					throw new RuntimeException(e);
+				}
+			}
+		});
+	}
+
+	public void shutdown() throws InterruptedException {
+		threadPool.shutdown();
+	}
+}
+```
+
+```java
+package aufgabe2b;
+
+import java.io.IOException;
+import java.util.concurrent.ExecutionException;
+
+public class TestDownload {
+	private static final String[] links = new String[] {
+			"http://www.google.com", 
+			"http://www.bing.com",
+			"http://www.yahoo.com", 
+			"http://www.microsoft.com",
+			"http://www.oracle.com" 
+		};
+
+	public static void main(String[] args) throws IOException,
+			InterruptedException, ExecutionException {
+		final long startTime = System.currentTimeMillis();
+		WebDownload downloader = new WebDownload();
+		for (int i = 0; i < links.length; i++) {
+			final String link = links[i];
+			downloader.asyncDownloadUrl(link, new CompletionHandler<String>() {
+				@Override
+				public void completed(String result) {
+					long endTime = System.currentTimeMillis();
+					System.out.println(String.format("%s downloaded (%d characters) after %d ms", 
+							link, result.length(), endTime - startTime));
+				}
+			});
+		}
+		downloader.shutdown();
+	}
+}
+```
+####8.1
+Der Peterson Algorithmus bezweckt den fairen gegenseitigen Ausschluss von Threads mit lediglich Lese-und Schreibzugriffen. Untenstehend ist der Algorithmus für den Fall von 2 Threads angegeben. Der Algorithmus ist zwar in seinem Ablauf prinzipiell korrekt durchdacht, funktioniert aber wegen des Speichermodells basierend auf „Weak Cache Consistency“ nicht richtig.
+
+Welche Effekte dieses Speichermodells können hier zum Fehlverhalten führen?
+
+![Aufgabe1](https://github.com/suizo12/-HSR.modules.PnProg/blob/master/images/u8.png)
+
+Die Sichtbarkeit der turn Variable in den Threads ist nicht garantiert.
+Der Zugriff auf die turn Variable in der while Schleife wird wegoptimiert, daher bleibt der Algorithmus hängen.
+```java
+package aufgabe1;
+
+public class PetersonMutex {
+	private volatile boolean state0 = false;
+	private volatile boolean state1 = false;
+	private volatile int turn = 0;
+
+	// acquire lock by thread 0
+	public void thread0Lock() {
+		state0 = true;
+		turn = 1;
+		while (turn == 1 && state1);
+	}
+
+	// release lock by thread 0
+	public void thread0Unlock() {
+		state0 = false;
+	}
+
+	// acquire lock by thread 1
+	public void thread1Lock() {
+		state1 = true;
+		turn = 0;
+		while (turn == 0 && state0);
+	}
+
+	// release lock by thread 1
+	public void thread1Unlock() {
+		state1 = false;
+	}
+}
+```
+
+####8.2 Bank Account mit Atomic
+```java
+package aufgabe2;
+//Mit Monitor
+public class BankAccount {
+	private int balance = 0;
+
+	public synchronized void deposit(int amount) {
+		balance += amount;
+	}
+
+	public synchronized boolean withdraw(int amount) {
+		if (amount <= this.balance) {
+			balance -= amount;
+			return true;
+		} else {
+			return false;
+		}
+	}
+
+	public synchronized int getBalance() {
+		return balance;
+	}
+}
+```
+```java
+package aufgabe2;
+
+import java.util.concurrent.atomic.AtomicInteger;
+
+public class BankAccountAtomic {
+	private AtomicInteger balance = new AtomicInteger(0);
+
+	public void deposit(int amount) {
+		balance.getAndAdd(amount);
+	}
+
+	public boolean withdraw(int amount) {
+		int oldValue;
+		do {
+			oldValue = balance.get();
+			if(oldValue < amount){
+				return false;
+			}
+		} while (!balance.compareAndSet(oldValue, oldValue - amount));
+		return true;
+	}
+
+	public int getBalance() {
+		return balance.get();
+	}
+}
+```
+
+####8.3 Lock-freier Stack
+```java
+package aufgabe3;
+
+import java.util.concurrent.atomic.AtomicReference;
+
+public class FastLockFreeStack<T> implements Stack<T> {
+
+	private AtomicReference<Node<T>> head = new AtomicReference<>(null);
+
+	public void push(T value) {
+		Node<T> newNode = new Node<>(value);
+		Node<T> current = null;
+		do
+	    {
+	        current = head.get();
+	        newNode.setNext(current);
+	    }while(!head.compareAndSet(current, newNode));
+	}
+
+	public T pop() {
+	    Node<T> currentHead = null;
+	    Node<T> futureHead = null;
+	    do
+	    {
+	        currentHead = head.get();
+	        if(currentHead == null)
+	        {
+	            return null;
+	        }
+	        futureHead = currentHead.next;
+	    }while(!head.compareAndSet(currentHead, futureHead)); 
+	    return currentHead.data;
+	}
+
+	class Node<T> {
+		private final T data;
+		private Node<T> next;
+
+		private Node(T data) {
+			this.data = data;
+		}
+
+		private void setNext(Node<T> next) {
+			this.next = next;
+		}
+	}
+}
+``
+
+####11.1
+```java
+package aufgabe1;
+
+import java.util.concurrent.TimeUnit;
+
+import scala.concurrent.duration.Duration;
+import scala.concurrent.duration.FiniteDuration;
+import akka.actor.ActorRef;
+import akka.actor.ActorSystem;
+import akka.actor.Props;
+import akka.actor.UntypedActor;
+/**
+a) Ergänzen Sie im Code die Stellen die mit einem TODO markiert sind. Tipp: mit getSender 
+	und getSelf erhalten Sie die ActorRef des Senders, bzw. von sich selbst.
+b) Erweitern Sie das Programm so, dass das Programm beendet wird sobald der Zähler den Wert 10 erreicht.
+c) Im Moment ist unser Actor System noch nicht sehr interessant. Wir ergänzen unser System so, 
+	dass in Regelmässigen Abständen eine Reset Message an einen Actor geschickt wird damit dieser den Zähler wieder auf 0 zurück setzt.
+*/
+public class PingPong {
+
+	static final FiniteDuration FIVE_SECONDS = Duration.create(5,
+			TimeUnit.SECONDS);
+
+	public static void main(String[] args) {
+		ActorSystem system = ActorSystem.create("PingPong");
+
+		ActorRef p1 = system.actorOf(Props.create(PingPongActor.class), "P1");
+		ActorRef p2 = system.actorOf(Props.create(PingPongActor.class), "P2");
+
+		//Send start message
+		p1.tell(new Start(), p2);
+
+		// Aufgabe c) Sending a reset message
+		system.scheduler().schedule(FIVE_SECONDS, FIVE_SECONDS, p1,
+				new Reset(), system.dispatcher(), ActorRef.noSender());
+	}
+
+	static class Start {
+	}
+
+	static class Reset {
+	}
+
+	static class Ping {
+		final int count;
+
+		public Ping(int count) {
+			this.count = count;
+		}
+	}
+
+	static class PingPongActor extends UntypedActor {
+
+		private boolean reset = false;
+
+		/**
+		* Receive Messagge, handle depending on type.
+		*/
+		public void onReceive(Object message) {
+			if (message instanceof Start) {
+				handleStart((Start) message);
+			} else if (message instanceof Ping) {
+				handlePing((Ping) message);
+			} else if (message instanceof Reset) {
+				handleReset();
+			} else {
+				unhandled(message);
+			}
+		}
+
+		private void handleReset() {
+			reset = true;
+		}
+
+		private void handlePing(Ping msg) {
+			System.out.println(getSelf().path().name() + ": Ping " + msg.count);
+			try {
+				Thread.sleep((long) (Math.random() * 1000) + 300);
+			} catch (InterruptedException e) {
+			}
+
+			// Aufgabe b
+			if(reset) {
+				reset = false;
+				getSender().tell(new Ping(0), getSelf());
+			} else if (msg.count == 10) {
+				//Woche 11 Folie 42
+				getContext().system().shutdown();
+			} else {
+				getSender().tell(new Ping(msg.count + 1), getSelf());
+			}
+		}
+
+		private void handleStart(Start message) {
+			System.out.println("Starting ...");
+			getSender().tell(new Ping(0), getSelf());
+		}
+	}
+}
+```
+
+####13.4 Vergleich mit anderen Modellen (Theorie)
+- Nachdem Sie erste Erfahrungen mit Reactive Programmierung gemacht haben, vergleichen Sie es mit
+anderen Parallel-Programmiermodellen:
+	- Producer/Consumer mit Threads
+	- Asynchrone Programmierung mit Futures
+	- Asynchrone Programmierung mit Callbacks
+	- Parallele LINQ-Abfragen
+	- Actor Model
+
+Welche Ähnlichkeiten und welche Unterschiede haben diese in Bezug auf Reactive Programming?
+
+![Vergleich](https://github.com/suizo12/-HSR.modules.PnProg/blob/master/images/w13.png)
+
+####14.2 Das Philosophen-Problem (siehe Vorlage) lässt sich klassisch mit binären Semaphoren modellieren.
+a) Ändern Sie das Programm, so dass es Software Transaktionen statt Semaphoren einsetzt. Ändern Sie hierzu die Klasse Fork ab.
+b) Um die Deadlocks zu vermeiden, ist in der Ursprungsversion eine lineare Sperrordnung nötig:
+Fork left = forks[Math.min(leftNo, rightNo)];
+Fork right = forks[Math.max(leftNo, rightNo)];
+Entfernen Sie dieses Artefakt, indem Sie geschachtelte Transaktionen einsetzen.
+
+
+#####Semaphor
+```java
+package task2;
+
+import java.util.concurrent.Semaphore;
+
+class Fork {
+	// TODO: Replace semaphore by usage of software transactions
+	private Semaphore semaphore = new Semaphore(1);
+	
+	public void acquire() {
+		try {
+			semaphore.acquire();
+		} catch (InterruptedException e) {
+			e.printStackTrace();
+		}
+	}
+	
+	public void release() {
+		semaphore.release();
+	}
+}
+
+class PhilosopherThread extends Thread {
+	private final int meals;
+	private final Fork left;
+	private final Fork right;
+	
+	
+	public PhilosopherThread(int meals, Fork left, Fork right) {
+		this.meals = meals;
+		this.left = left;
+		this.right = right;
+	}
+
+	@Override
+	public void run() {
+		for (int m = 0; m < meals; m++) {
+			pickUpForks();
+			// eat
+			putDownForks();
+		}
+	}
+	
+	private void pickUpForks() {
+		left.acquire();
+		right.acquire();
+	}
+	
+	private void putDownForks() {
+		left.release();
+		right.release();
+	}
+}
+
+public class DiningPhilosophers {
+	private static long measure(int tableSize, int meals) throws InterruptedException {
+		Fork[] forks = new Fork[tableSize];
+		for (int i = 0; i < tableSize; i++) {
+			forks[i] = new Fork();
+		}
+
+		PhilosopherThread[] threads = new PhilosopherThread[tableSize];
+		for (int i = 0; i < tableSize; i++) {
+			int leftNo = i;
+			int rightNo = (i + 1) % tableSize;
+			
+			// TODO: Remove lock ordering for deadlock avoidance in STM solution
+			Fork left = forks[Math.min(leftNo, rightNo)];
+			Fork right = forks[Math.max(leftNo, rightNo)];			
+		
+			threads[i] = new PhilosopherThread(meals, left, right);
+		}
+
+		long start = System.currentTimeMillis();
+
+		for (PhilosopherThread thread : threads) {
+			thread.start();
+		}
+
+		for (PhilosopherThread thread : threads) {
+			thread.join();
+		}
+
+		return System.currentTimeMillis() - start;
+	}
+
+	public static void main(String[] args) throws InterruptedException {
+		final int meals = 1_000_000;
+		for (int philosopherNo = 0; philosopherNo < 5; philosopherNo++) {
+			long elapsed = measure(5, meals);
+			System.out.printf("%3.1f us/meal\n", (elapsed * 1000.0) / meals);
+		}
+	}
+}
+
+```
+
+#####Atomic
+```java
+package task2;
+
+import scala.concurrent.stm.Ref;
+import scala.concurrent.stm.japi.STM;
+/**
+Auch hier ist die STM-Lösung substantiell langsamer; 
+dafür wird ein Deadlock mit einer geschachtelten Transaktion in pickUpForks() automatisch vermieden. 
+Es braucht daher, die lineare Sperrordnung mit min/max der Gabelnummern nicht mehr.
+*/
+class Fork {
+	private Ref.View<Boolean> inUse = STM.newRef(false);
+	
+	public void acquire() {
+		STM.atomic(() -> {
+			if (inUse.get()) {
+				System.out.println("Retry");
+				STM.retry();
+			}
+			inUse.set(true);
+		});
+	}
+	
+	public void release() {
+		inUse.set(false);
+	}
+}
+
+class PhilosopherThread extends Thread {
+	private final int meals;
+	private final Fork left;
+	private final Fork right;
+
+	public PhilosopherThread(String name, int meals, Fork left, Fork right) {
+		this.meals = meals;
+		this.left = left;
+		this.right = right;
+	}
+
+	@Override
+	public void run() {
+		for (int m = 0; m < meals; m++) {
+			pickUpForks();
+			// eat
+			putDownForks();
+		}
+	}
+	
+	private void pickUpForks() {
+		STM.atomic(() -> {
+			left.acquire();
+			right.acquire();
+		});
+	}
+	
+	private void putDownForks() {
+		left.release();
+		right.release();
+	}
+}
+
+public class DiningPhilosophers {
+	private static long measure(int tableSize, int meals) throws InterruptedException {
+		Fork[] forks = new Fork[tableSize];
+		for (int i = 0; i < tableSize; i++) {
+			forks[i] = new Fork();
+		}
+
+		PhilosopherThread[] threads = new PhilosopherThread[tableSize];
+		for (int i = 0; i < tableSize; i++) {
+			int leftNo = i;
+			int rightNo = (i + 1) % tableSize;
+			
+			Fork left = forks[leftNo];
+			Fork right = forks[rightNo];			
+		
+			String name = "Philosopher " + i;
+			threads[i] = new PhilosopherThread(name, meals, left, right);
+		}
+
+		long start = System.currentTimeMillis();
+
+		for (PhilosopherThread thread : threads) {
+			thread.start();
+		}
+
+		for (PhilosopherThread thread : threads) {
+			thread.join();
+		}
+
+		return System.currentTimeMillis() - start;
+	}
+
+	public static void main(String[] args) throws InterruptedException {
+		final int meals = 1000_000;
+		for (int philosopherNo = 0; philosopherNo < 5; philosopherNo++) {
+			long elapsed = measure(5, meals);
+			System.out.printf("%3.1f us/meal\n", (elapsed * 1000.0) / meals);
+		}
+	}
+}
+```
