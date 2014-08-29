@@ -937,7 +937,7 @@ Java8:
 	- T ist Resultat des Tasks (Void, wenn kein Resultat)
 - submit(ForkJoinTask<T>task)
 	- Task einreihen, aber nicht abwarten
-- ForkJoinTaskist Basisklasse von RecursiveTaskund RecursiveAction
+- ForkJoinTaskist Basisklasse von RecursiveTask und RecursiveAction
 
 ![Rekursive Tasks](https://github.com/suizo12/-HSR.modules.PnProg/blob/master/images/recursive_task1.png)
 ```java
@@ -964,7 +964,7 @@ Kein Shutdown des Thread-Pool nötig, da diese als Deamon Thread laufen.
 
 5.14 Implementiere das Recursive Finden mit dem Fork Join Pool Prinzip.
 ```java
-class SearchTaskextends RecursiveTask<Boolean>{
+class SearchTask extends RecursiveTask<Boolean>{
 	private List<String> words; 
 	private String pattern;
 	
@@ -2501,6 +2501,65 @@ public class DiningPhilosophers {
 			long elapsed = measure(5, meals);
 			System.out.printf("%3.1f us/meal\n", (elapsed * 1000.0) / meals);
 		}
+	}
+}
+```
+
+#### RecursiveTask
+```java
+//Sequenziell
+public int getMaximum(int[] array) {
+	int max = Integer.MIN_VALUE;
+	for (int value: array) {
+		max = Math.max(value, max);
+	}
+	return max;
+}
+```
+
+
+
+```java
+//Einsatz des RecursiveTask
+public int getMaximum(int[] array) {
+	MaxSearchTask task = new MaxSearchTask(array, 0, array.length);
+	ForkJoinPool pool = new ForkJoinPool();
+	return pool.invoke(task);
+}
+
+class MaxSearchTask extends RecursiveTask<Integer> {
+	public static final int THRESHOLD = 1000;
+	private int[] array;
+	private int left, right;
+
+	public MaxSearchTask(int[] array, int left, int right) {
+		this.array = array;
+		this.left = left;
+		this.right = right;
+	}
+
+	@Override
+	protected Integer compute() {
+		if (right - left < THRESHOLD) {
+			return sequentialMaximum();
+		} else {
+			int middle = (left + right) / 2;
+			MaxSearchTask taskLeft = new MaxSearchTask(array, left, middle);
+			MaxSearchTask taskRight = new MaxSearchTask(array, middle, right);
+			taskLeft.fork();
+			taskRight.fork();
+			int valueLeft = taskLeft.join();
+			int valueRight = taskRight.join();
+			return Math.max(valueLeft, valueRight);
+		}
+	}
+
+	private int sequentialMaximum() {
+		int max = Integer.MIN_VALUE;
+		for (int k = left; k < right; k++) {
+			max = Math.max(array[k], max);
+		}
+		return max;
 	}
 }
 ```
